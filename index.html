@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Kütüphanem Pro - v15.4</title>
+    <title>Kütüphanem</title>
     <style>
         /* --- TEMA --- */
         :root {
@@ -62,6 +62,8 @@
         .book-details { flex: 1; overflow: hidden; }
         .book-title { font-size: 15px; font-weight: 600; color: white; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .book-author { font-size: 13px; color: var(--text-dim); }
+        .status-badge { position:absolute; top:12px; right:12px; width:10px; height:10px; border-radius:50%; display:none; }
+        .status-badge.show { display:block; }
         
         /* Modal */
         .modal-overlay { display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 2000; overflow-y: auto; animation: slideUp 0.3s; }
@@ -80,8 +82,9 @@
         .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
         .action-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: white; padding: 15px; border-radius: 12px; font-size: 13px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: 0.2s; }
         .action-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(10,132,255,0.1); }
-        .star-rating { display: flex; justify-content: center; gap: 8px; margin: 15px 0; }
+        .star-rating { display: flex; justify-content: center; gap: 8px; margin: 15px 0 5px; }
         .star { font-size: 28px; color: #444; cursor: pointer; transition: 0.2s; } .star.filled { color: var(--warning); }
+        .rating-info { font-size: 11px; color: var(--text-dim); margin-bottom: 15px; }
 
         .user-row { display: flex; align-items: center; justify-content: space-between; padding: 15px; background: var(--card-bg); border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 5px; border-radius: 10px; cursor: pointer; }
         .user-info { display: flex; flex-direction: column; align-items: flex-start; }
@@ -152,6 +155,9 @@
     </div>
 
     <div id="page-authors" class="content-area hidden">
+        <div style="margin-bottom:20px;">
+            <input type="text" id="search-authors" class="input-std" style="margin:0;" placeholder="Yazar ara..." onkeyup="renderAuthors()">
+        </div>
         <div id="count-authors" class="count-header" style="margin-top:10px;">Yükleniyor...</div>
         <div id="authors-grid" class="author-grid"></div>
     </div>
@@ -397,18 +403,19 @@
             document.getElementById('btn-edit-mode').style.display = isAdmin ? 'block' : 'none'; document.getElementById('btn-edit-auth-mode').style.display = 'none'; document.getElementById('btn-edit-mode').innerText = "Düzenle";
             const i = userInteractions[book.id] || {};
             const snap = await getDocs(query(collection(db, "interactions"), where("bookId", "==", book.id)));
-            let r=0, w=0, f=0; snap.forEach(d=>{ const v=d.data(); if(v.status==='read')r++; if(v.status==='want')w++; if(v.fav)f++; });
+            let r=0, w=0, f=0, ratings=0; snap.forEach(d=>{ const v=d.data(); if(v.status==='read')r++; if(v.status==='want')w++; if(v.fav)f++; if(v.rating && v.rating > 0) ratings++; });
             let coverDisplay = book.cover ? `<img src="${book.cover}" style="width:140px; height:210px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5); margin-bottom:15px;">` : `<div style="width:140px; height:210px; border-radius:12px; background:#333; display:flex; align-items:center; justify-content:center; font-size:50px; margin:0 auto 15px;">📚</div>`;
             document.getElementById('modal-view-mode').innerHTML = `
                 ${coverDisplay}
                 <h2 style="font-size:22px; margin-bottom:5px;">${book.title}</h2>
                 <span onclick="goToAuthor('${book.author}')" style="color:var(--accent); font-size:16px; cursor:pointer; text-decoration:underline;">${book.author}</span>
-                <div class="social-stats"><div class="stat-item"><span class="stat-val">${r}</span>Okudu</div><div class="stat-item"><span class="stat-val">${w}</span>Listede</div><div class="stat-item"><span class="stat-val">${f}</span>Favori</div></div>
+                <div class="social-stats"><div class="stat-item"><span class="stat-val" id="modal-stat-read">${r}</span>Okudu</div><div class="stat-item"><span class="stat-val" id="modal-stat-want">${w}</span>Listede</div><div class="stat-item"><span class="stat-val" id="modal-stat-fav">${f}</span>Favori</div></div>
                 <div class="star-rating">${[1,2,3,4,5].map(n=>`<span class="star ${(i.rating||0)>=n?'filled':''}" onclick="setRating(${n})">★</span>`).join('')}</div>
+                <div class="rating-info" id="rating-count-text">${ratings > 0 ? ratings + ' kişi puanladı' : 'Henüz puanlanmamış'}</div>
                 <div class="action-grid">
-                    <button class="action-btn ${i.status==='read'?'active':''}" onclick="setStatus('read')">✅ Okudum</button>
-                    <button class="action-btn ${i.status==='want'?'active':''}" onclick="setStatus('want')">🔖 Okuyacağım</button>
-                    <button class="action-btn ${i.fav?'active':''}" onclick="toggleFav()">❤️ Favori</button>
+                    <button class="action-btn ${i.status==='read'?'active':''}" id="btn-modal-read" onclick="setStatus('read')">✅ Okudum</button>
+                    <button class="action-btn ${i.status==='want'?'active':''}" id="btn-modal-want" onclick="setStatus('want')">🔖 Okuyacağım</button>
+                    <button class="action-btn ${i.fav?'active':''}" id="btn-modal-fav" onclick="toggleFav()">❤️ Favori</button>
                     <button class="action-btn" onclick="shareBook()">📤 Paylaş</button>
                 </div>
                 <div style="text-align:left; background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-top:20px;">
@@ -424,13 +431,80 @@
             document.getElementById('full-modal').style.display = 'block'; loadComments(book.id);
         }
 
+        // --- OPTIMISTIC UI UPDATES (ANLIK TEPKİ & SAYAÇLAR) ---
+        window.setStatus = async (s) => {
+            if(!currentUser) return showToast("Giriş yapmalısın");
+            const current = userInteractions[currentBook.id] || {};
+            const prevStatus = current.status;
+            const newStatus = (prevStatus === s) ? null : s;
+            
+            // 1. Arayüzü Hemen Güncelle
+            userInteractions[currentBook.id] = { ...current, status: newStatus };
+            document.getElementById('btn-modal-read').classList.toggle('active', newStatus === 'read');
+            document.getElementById('btn-modal-want').classList.toggle('active', newStatus === 'want');
+            
+            // Kitap detayı sayaçlarını güncelle
+            const readEl = document.getElementById('modal-stat-read');
+            const wantEl = document.getElementById('modal-stat-want');
+            if(prevStatus === 'read') readEl.innerText = Math.max(0, parseInt(readEl.innerText) - 1);
+            if(prevStatus === 'want') wantEl.innerText = Math.max(0, parseInt(wantEl.innerText) - 1);
+            if(newStatus === 'read') readEl.innerText = parseInt(readEl.innerText) + 1;
+            if(newStatus === 'want') wantEl.innerText = parseInt(wantEl.innerText) + 1;
+
+            updateProfileStats(); // Profil sayaçlarını da anlık güncelle
+
+            // 2. Veritabanına Gönder
+            const ref = doc(db, "interactions", `${currentUser.uid}_${currentBook.id}`);
+            await setDoc(ref, { uid: currentUser.uid, bookId: currentBook.id, status: newStatus, fav: current.fav || false, rating: current.rating || 0 }, { merge: true });
+        }
+
+        window.toggleFav = async () => {
+            if(!currentUser) return showToast("Giriş yapmalısın");
+            const current = userInteractions[currentBook.id] || {};
+            const newFav = !current.fav;
+            
+            // 1. Arayüzü Hemen Güncelle
+            userInteractions[currentBook.id] = { ...current, fav: newFav };
+            document.getElementById('btn-modal-fav').classList.toggle('active', newFav);
+            
+            const favEl = document.getElementById('modal-stat-fav');
+            favEl.innerText = newFav ? parseInt(favEl.innerText) + 1 : Math.max(0, parseInt(favEl.innerText) - 1);
+            
+            updateProfileStats();
+
+            // 2. Veritabanına Gönder
+            const ref = doc(db, "interactions", `${currentUser.uid}_${currentBook.id}`);
+            await setDoc(ref, { uid: currentUser.uid, bookId: currentBook.id, fav: newFav }, { merge: true });
+        }
+
+        window.setRating = async (r) => {
+            if(!currentUser) return showToast("Giriş yapmalısın");
+            const current = userInteractions[currentBook.id] || {};
+            const isFirstRating = (!current.rating || current.rating === 0);
+            userInteractions[currentBook.id] = { ...current, rating: r };
+
+            // 1. Arayüzü Güncelle
+            const stars = document.querySelectorAll('.star');
+            stars.forEach((star, index) => star.classList.toggle('filled', index < r));
+            
+            if(isFirstRating) {
+                const infoText = document.getElementById('rating-count-text');
+                const currentCount = infoText.innerText.includes('kişi') ? parseInt(infoText.innerText) : 0;
+                infoText.innerText = (currentCount + 1) + " kişi puanladı";
+            }
+
+            // 2. Veritabanına Gönder
+            const ref = doc(db, "interactions", `${currentUser.uid}_${currentBook.id}`);
+            await setDoc(ref, { uid: currentUser.uid, bookId: currentBook.id, rating: r }, { merge: true });
+        }
+
         // --- COMMENTS LOGIC ---
         function loadComments(bid) {
             const l=document.getElementById('comments-list'); if(!l) return;
             const q=query(collection(db,"comments"),where("bookId","==",bid)); 
             onSnapshot(q,(s)=>{ 
                 l.innerHTML="";
-                document.getElementById('comment-count-badge').innerText = `(${s.size})`; // YORUM SAYACI GÜNCELLE
+                document.getElementById('comment-count-badge').innerText = `(${s.size})`;
                 if(s.empty){ l.innerHTML="<div style='color:#666;font-size:12px;'>Yorum yok.</div>"; return;}
                 const comments = []; s.forEach(d => comments.push({id: d.id, ...d.data()})); comments.sort((a,b) => (b.date || 0) - (a.date || 0));
                 comments.forEach(c=>{
@@ -445,7 +519,7 @@
         window.deleteComment = async (id) => { if(confirm("Yorumu silmek istiyor musunuz?")) { await deleteDoc(doc(db, "comments", id)); showToast("Yorum silindi"); } }
         window.sendComment=async()=>{const t=document.getElementById('comment-input').value;if(!t)return;await addDoc(collection(db,"comments"),{bookId:currentBook.id,text:t,userName:currentUser.displayName||"Okur",uid:currentUser.uid,date:Date.now()});document.getElementById('comment-input').value="";}
 
-        // --- PROFILE LOGIC (YENİLENEN) ---
+        // --- PROFILE LOGIC ---
         window.filterProfile = (type) => { 
             const list = document.getElementById('profile-list'); list.innerHTML = ""; 
             if (type === 'comments') {
@@ -465,43 +539,18 @@
             ids.forEach(id => { const b = globalBooks.find(x => x.id === id); if(b) list.appendChild(createBookCard(b)); }); 
         }
 
-        // --- EXCEL EXPORT (TIRNAKSIZ & TEMİZ SÜRÜM & SEMICOLON CHECK) ---
+        // --- EXCEL & IMPORT ---
         window.exportExcel = () => {
             if(!isAdmin) return;
-            let csvContent = "\uFEFF"; // BOM
+            let csvContent = "\uFEFF"; 
             csvContent += "Kitap Adı;Yazar;Kapak Linki;Özet\n";
-
-            // Temizleme Fonksiyonu: Tırnakları ve noktalı virgülleri temizler
-            const cleanForCsv = (text) => {
-                if (!text) return "";
-                return text.toString()
-                    .replace(/;/g, " -")    // Noktalı virgülleri tire yap (CSV patlamasın)
-                    .replace(/[\r\n]+/g, " ") // Alt satırları boşluk yap
-                    .trim();
-            };
-
-            globalBooks.forEach(b => {
-                const title = cleanForCsv(b.title);
-                const author = cleanForCsv(b.author);
-                const cover = cleanForCsv(b.cover);
-                const desc = cleanForCsv(b.desc);
-                
-                // Artık tırnak içine almıyoruz, noktalı virgül temizlendi
-                csvContent += `${title};${author};${cover};${desc}\n`;
-            });
-
+            const cleanForCsv = (text) => { if (!text) return ""; return text.toString().replace(/;/g, " -").replace(/[\r\n]+/g, " ").trim(); };
+            globalBooks.forEach(b => { csvContent += `${cleanForCsv(b.title)};${cleanForCsv(b.author)};${cleanForCsv(b.cover)};${cleanForCsv(b.desc)}\n`; });
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", "Kutuphane_Yedek.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            const link = document.createElement("a"); link.setAttribute("href", url); link.setAttribute("download", "Kutuphane_Yedek.csv");
+            document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
         }
-
-        // --- IMPORT UPDATE (SMART SEPARATOR) ---
         window.importData = (input) => {
             if(!isAdmin) return;
             const file = input.files[0]; if(!file) return;
@@ -509,39 +558,83 @@
             reader.onload = async function(e) {
                 try {
                     let count = 0; let skipped = 0;
-                    const processBook = async (t, a, c, d) => {
-                        if(globalBooks.some(b => cleanText(b.title) === cleanText(t) && cleanText(b.author) === cleanText(a))) { skipped++; return; }
-                        await addDoc(collection(db, "books"), { title: t, author: a, cover: c, desc: d });
-                        count++;
-                    };
-                    
-                    if(file.name.endsWith('.csv')) {
-                        const lines = e.target.result.split('\n');
-                        for(let i=1; i<lines.length; i++) {
-                            // Smart Separator: Önce noktalı virgül dene, olmazsa virgül dene
-                            let cols = lines[i].split(';');
-                            if(cols.length < 2) cols = lines[i].split(',');
-
-                            if(cols.length >= 2) {
-                                const t = cols[0].trim();
-                                const a = cols[1].trim();
-                                const cov = cols[2] ? cols[2].trim() : "";
-                                const desc = cols[3] ? cols[3].trim() : "";
-                                if(t && a) await processBook(t, a, cov, desc);
-                            }
+                    const lines = e.target.result.split('\n');
+                    for(let i=1; i<lines.length; i++) {
+                        let cols = lines[i].split(';'); if(cols.length < 2) cols = lines[i].split(',');
+                        if(cols.length >= 2) {
+                            const t = cols[0].trim(); const a = cols[1].trim();
+                            if(globalBooks.some(b => cleanText(b.title) === cleanText(t) && cleanText(b.author) === cleanText(a))) { skipped++; continue; }
+                            await addDoc(collection(db, "books"), { title: t, author: a, cover: cols[2]?.trim() || "", desc: cols[3]?.trim() || "" });
+                            count++;
                         }
-                    } else {
-                        const d = JSON.parse(e.target.result);
-                        for(const b of d) { await processBook(b.title, b.author, b.cover||"", b.desc||""); }
                     }
                     showToast(`${count} eklendi, ${skipped} pas geçildi`);
                 } catch(err) { showToast("Dosya hatası"); }
             };
-            reader.readAsText(file); // Default UTF-8
-            input.value = '';
+            reader.readAsText(file); input.value = '';
         }
 
         // --- COMMON ---
+        function renderAuthors() {
+            const grid = document.getElementById('authors-grid');
+            const searchQ = document.getElementById('search-authors').value.toLowerCase();
+            grid.innerHTML = "";
+            const groups = {};
+            globalBooks.forEach(b => { if(!groups[b.author]) groups[b.author] = []; groups[b.author].push(b); });
+            
+            const filteredAuthors = Object.keys(groups).filter(a => a.toLowerCase().includes(searchQ)).sort();
+            document.getElementById('count-authors').innerText = `Toplam: ${filteredAuthors.length} Yazar`;
+            
+            filteredAuthors.forEach(auth => {
+                const div = document.createElement('div'); div.className = "author-card"; div.onclick = () => openAuthorModal(auth, groups[auth]);
+                div.innerHTML = `<div class="author-img-box" id="thumb-auth-${auth.replace(/\W/g,'')}">👤</div><div style="font-weight:600;font-size:15px;">${auth}</div><div style="font-size:12px;color:#999;">${groups[auth].length} Kitap</div>`;
+                grid.appendChild(div);
+                loadAuthorImage(auth, `thumb-auth-${auth.replace(/\W/g,'')}`);
+            });
+        }
+
+        async function loadAuthorImage(name, elId) { 
+            const el = document.getElementById(elId); if(!el) return;
+            const snap = await getDoc(doc(db,"authors",name));
+            if(snap.exists() && snap.data().img) { el.innerHTML = `<img src="${snap.data().img}" style="width:100%;height:100%;object-fit:cover;">`; return; }
+            try {
+                const r = await fetch(`https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`);
+                const d = await r.json();
+                if(d.thumbnail) { 
+                    el.innerHTML = `<img src="${d.thumbnail.source}" style="width:100%;height:100%;object-fit:cover;">`;
+                    await setDoc(doc(db,"authors",name),{img:d.thumbnail.source},{merge:true});
+                }
+            } catch(e){}
+        }
+
+        window.openAuthorModal = async (name, books) => {
+            currentAuthorName = name;
+            document.getElementById('modal-view-mode').classList.remove('hidden'); document.getElementById('modal-edit-mode').classList.add('hidden'); document.getElementById('modal-edit-auth-mode').classList.add('hidden'); document.getElementById('modal-req-mode').classList.add('hidden');
+            document.getElementById('btn-edit-mode').style.display = 'none'; document.getElementById('btn-edit-auth-mode').style.display = isAdmin ? 'block' : 'none';
+            
+            let bio="Yükleniyor...", img="";
+            const snap = await getDoc(doc(db,"authors",name));
+            if(snap.exists()){ bio = snap.data().bio || "Bilgi yok."; img = snap.data().img || ""; }
+            else {
+                try {
+                    const r = await fetch(`https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`);
+                    const d = await r.json(); bio = d.extract || "Bilgi yok."; img = d.thumbnail?.source || "";
+                    await setDoc(doc(db,"authors",name), {bio, img}, {merge:true});
+                } catch(e){ bio = "Bilgi yok."; }
+            }
+            let html = `<div style="width:100px; height:100px; background:#333; border-radius:50%; margin:0 auto 15px; overflow:hidden;">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:cover;">`:'<div style="font-size:40px;line-height:100px;">👤</div>'}</div><h2 style="margin-bottom:10px;">${name}</h2><div style="text-align:left;background:rgba(255,255,255,0.05);padding:15px;border-radius:10px;font-size:14px;color:#ccc;max-height:200px;overflow-y:auto;margin-bottom:20px;">${bio}</div><h4 style="text-align:left;color:#999;margin-bottom:10px;">KİTAPLARI (${books.length})</h4>`;
+            books.forEach(b => html += `<div onclick="openBookModal({id:'${b.id}',title:'${b.title}',author:'${b.author}',cover:'${b.cover}',desc:'${b.desc}'})" style="padding:10px;background:var(--card-bg);margin-bottom:8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:10px;"><div style="width:30px;height:45px;border-radius:4px;overflow:hidden;flex-shrink:0;">${b.cover?`<img src="${b.cover}" style="width:100%;height:100%;object-fit:cover;">`:`<div style="width:100%;height:100%;background:#444;display:flex;align-items:center;justify-content:center;">📚</div>`}</div><div style="flex:1;text-align:left;">${b.title}</div><div style="color:#666;">›</div></div>`);
+            document.getElementById('modal-view-mode').innerHTML = html; document.getElementById('full-modal').style.display = 'block';
+        }
+
+        function updateProfileStats() {
+            const validIds = globalBooks.map(b => b.id);
+            const v = Object.values(userInteractions).filter(i => validIds.includes(i.bookId));
+            document.getElementById('stat-read').innerText = v.filter(i=>i.status==='read').length;
+            document.getElementById('stat-want').innerText = v.filter(i=>i.status==='want').length;
+            document.getElementById('stat-fav').innerText = v.filter(i=>i.fav).length;
+        }
+
         window.toggleEditMode = () => { const view = document.getElementById('modal-view-mode'); const edit = document.getElementById('modal-edit-mode'); if(view.classList.contains('hidden')) { view.classList.remove('hidden'); edit.classList.add('hidden'); document.getElementById('btn-edit-mode').innerText="Düzenle"; } else { view.classList.add('hidden'); edit.classList.remove('hidden'); document.getElementById('btn-edit-mode').innerText="İptal"; document.getElementById('edit-title').value=currentBook.title; document.getElementById('edit-author').value=currentBook.author; document.getElementById('edit-cover').value=currentBook.cover||""; document.getElementById('edit-desc').value=currentBook.desc||""; } }
         window.saveEditedBook = async () => { if(!isAdmin)return; const d={title:document.getElementById('edit-title').value, author:document.getElementById('edit-author').value, cover:document.getElementById('edit-cover').value, desc:document.getElementById('edit-desc').value}; await updateDoc(doc(db,"books",currentBook.id),d); showToast("Güncellendi ✅"); openBookModal({id:currentBook.id,...d}); }
         window.viewOtherProfile = async (uid, userData) => { if(uid === currentUser.uid) { switchTab('profile'); return; } if(userData.isPrivate && !isAdmin) return showToast("Bu profil gizli 🔒"); document.getElementById('modal-view-mode').innerHTML = "<div style='padding:20px;'>Yükleniyor...</div>"; document.getElementById('full-modal').style.display = 'block'; document.getElementById('modal-title').innerText = "Kullanıcı Profili"; document.getElementById('modal-edit-mode').classList.add('hidden'); document.getElementById('modal-edit-auth-mode').classList.add('hidden'); document.getElementById('modal-req-mode').classList.add('hidden'); const q = query(collection(db, "interactions"), where("uid", "==", uid)); const snap = await getDocs(q); let userBooks = []; snap.forEach(d => { const b = globalBooks.find(x => x.id === d.data().bookId); if(b) userBooks.push(b); }); let html = `<div style="text-align:center; margin-bottom:20px;"><div style="font-size:40px;">👤</div><h3>${userData.displayName || userData.email}</h3><p style="color:#888;">${userBooks.length} Kitaplık Etkileşimi</p></div><div style="text-align:left;">`; if(userBooks.length === 0) html += "<p style='text-align:center; color:#666;'>Henüz kitap yok.</p>"; userBooks.forEach(b => { html += `<div style="padding:10px; border-bottom:1px solid #333; display:flex; gap:10px; align-items:center;"><img src="${b.cover||''}" style="width:30px; height:45px; object-fit:cover; border-radius:4px;"><div>${b.title}</div></div>`; }); html += "</div>"; document.getElementById('modal-view-mode').innerHTML = html; }
@@ -550,15 +643,6 @@
         window.openRequestModal = () => { document.getElementById('modal-view-mode').classList.add('hidden'); document.getElementById('modal-edit-mode').classList.add('hidden'); document.getElementById('modal-edit-auth-mode').classList.add('hidden'); document.getElementById('modal-req-mode').classList.remove('hidden'); document.getElementById('full-modal').style.display = 'block'; document.getElementById('modal-title').innerText = "İstek Gönder"; document.getElementById('btn-edit-mode').style.display='none'; document.getElementById('btn-edit-auth-mode').style.display='none'; }
         window.sendRequest = async () => { const txt = document.getElementById('req-text').value; if(!txt) return; await addDoc(collection(db, "messages"), { uid: currentUser.uid, email: currentUser.email, text: txt, date: Date.now() }); showToast("Mesaj gönderildi 📨"); closeFullModal(); document.getElementById('req-text').value = ""; }
         window.viewMessages = async () => { if(!isAdmin) return; document.getElementById('modal-view-mode').classList.remove('hidden'); document.getElementById('modal-edit-mode').classList.add('hidden'); document.getElementById('modal-req-mode').classList.add('hidden'); document.getElementById('full-modal').style.display = 'block'; document.getElementById('modal-title').innerText = "Gelen Mesajlar"; const listDiv = document.getElementById('modal-view-mode'); listDiv.innerHTML = "Yükleniyor..."; const q = query(collection(db, "messages"), orderBy("date", "desc")); const snap = await getDocs(q); if(snap.empty) { listDiv.innerHTML = "Mesaj yok."; return; } let html = ""; snap.forEach(d => { const m = d.data(); const date = new Date(m.date).toLocaleDateString(); html += `<div class="msg-item"><div class="msg-header"><span>${m.email}</span><span>${date}</span></div><div>${m.text}</div></div>`; }); listDiv.innerHTML = html; }
-        function renderAuthors() { const grid = document.getElementById('authors-grid'); grid.innerHTML = ""; const groups = {}; globalBooks.forEach(b => { if(!groups[b.author])groups[b.author]=[]; groups[b.author].push(b); }); document.getElementById('count-authors').innerText = `Toplam: ${Object.keys(groups).length} Yazar`; Object.keys(groups).sort().forEach(auth => { const div = document.createElement('div'); div.className = "author-card"; div.onclick = () => openAuthorModal(auth, groups[auth]); div.innerHTML = `<div class="author-img-box" id="thumb-auth-${auth.replace(/\W/g,'')}">👤</div><div style="font-weight:600;font-size:15px;">${auth}</div><div style="font-size:12px;color:#999;">${groups[auth].length} Kitap</div>`; grid.appendChild(div); loadAuthorImage(auth, `thumb-auth-${auth.replace(/\W/g,'')}`); }); }
-        async function loadAuthorImage(name, elId) { const el=document.getElementById(elId); if(!el)return; try { const snap=await getDoc(doc(db,"authors",name)); if(snap.exists()&&snap.data().img){el.innerHTML=`<img src="${snap.data().img}" style="width:100%;height:100%;object-fit:cover;">`; return;} } catch(e){} try { const r=await fetch(`https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`); const d=await r.json(); if(d.thumbnail){ el.innerHTML=`<img src="${d.thumbnail.source}" style="width:100%;height:100%;object-fit:cover;">`; await setDoc(doc(db,"authors",name),{img:d.thumbnail.source},{merge:true}); } } catch(e){} }
-        window.openAuthorModal = async (name, books) => { currentAuthorName = name; document.getElementById('modal-view-mode').classList.remove('hidden'); document.getElementById('modal-edit-mode').classList.add('hidden'); document.getElementById('modal-edit-auth-mode').classList.add('hidden'); document.getElementById('modal-req-mode').classList.add('hidden'); document.getElementById('btn-edit-mode').style.display = 'none'; document.getElementById('btn-edit-auth-mode').style.display = isAdmin ? 'block' : 'none'; document.getElementById('btn-edit-auth-mode').innerText = "Düzenle"; let bio="Yükleniyor...", img=""; const docRef=doc(db,"authors",name); const snap=await getDoc(docRef); if(snap.exists()){ bio=snap.data().bio||"Bilgi yok."; img=snap.data().img||""; } else { try{const r=await fetch(`https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`);const d=await r.json();bio=d.extract||"Bilgi yok.";if(d.thumbnail)img=d.thumbnail.source;await setDoc(docRef,{bio,img},{merge:true});}catch(e){bio="Bilgi yok.";} } let html = `<div style="width:100px; height:100px; background:#333; border-radius:50%; margin:0 auto 15px; overflow:hidden;">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:cover;">`:'<div style="font-size:40px;line-height:100px;">👤</div>'}</div><h2 style="margin-bottom:10px;">${name}</h2><div style="text-align:left;background:rgba(255,255,255,0.05);padding:15px;border-radius:10px;font-size:14px;color:#ccc;max-height:200px;overflow-y:auto;margin-bottom:20px;">${bio}</div><h4 style="text-align:left;color:#999;margin-bottom:10px;">KİTAPLARI (${books.length})</h4>`; books.forEach(b => html += `<div onclick="openBookModal({id:'${b.id}',title:'${b.title}',author:'${b.author}',cover:'${b.cover}',desc:'${b.desc}'})" style="padding:10px;background:var(--card-bg);margin-bottom:8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:10px;"><div style="width:30px;height:45px;border-radius:4px;overflow:hidden;flex-shrink:0;">${b.cover?`<img src="${b.cover}" style="width:100%;height:100%;object-fit:cover;">`:`<div style="width:100%;height:100%;background:#444;display:flex;align-items:center;justify-content:center;">📚</div>`}</div><div style="flex:1;">${b.title}</div><div style="color:#666;">›</div></div>`); document.getElementById('modal-view-mode').innerHTML = html; document.getElementById('edit-auth-name').value = currentAuthorName; document.getElementById('edit-auth-bio').value = bio; document.getElementById('edit-auth-img').value = img; document.getElementById('full-modal').style.display = 'block'; }
-        window.toggleAuthorEditMode = () => { const view = document.getElementById('modal-view-mode'); const edit = document.getElementById('modal-edit-auth-mode'); if(view.classList.contains('hidden')) { view.classList.remove('hidden'); edit.classList.add('hidden'); document.getElementById('btn-edit-auth-mode').innerText="Düzenle"; } else { view.classList.add('hidden'); edit.classList.remove('hidden'); document.getElementById('btn-edit-auth-mode').innerText="İptal"; } }
-        window.saveEditedAuthor = async () => { const newName = document.getElementById('edit-auth-name').value.trim(); const bio = document.getElementById('edit-auth-bio').value; const img = document.getElementById('edit-auth-img').value; if(!newName) return showToast("İsim boş olamaz"); if(newName === currentAuthorName) { await setDoc(doc(db,"authors", currentAuthorName), { bio, img }, { merge: true }); showToast("Yazar Güncellendi ✅"); } else { showToast("Yazar taşınıyor... ⏳"); const batch = writeBatch(db); batch.set(doc(db, "authors", newName), { bio, img }); const q = query(collection(db, "books"), where("author", "==", currentAuthorName)); const snap = await getDocs(q); snap.forEach(d => { batch.update(doc(db, "books", d.id), { author: newName }); }); batch.delete(doc(db, "authors", currentAuthorName)); await batch.commit(); showToast(`Güncellendi ✅`); currentAuthorName = newName; } closeFullModal(); }
-        window.closeFullModal = () => document.getElementById('full-modal').style.display = 'none';
-        window.findDuplicates=()=>{if(!isAdmin)return;const groups={};globalBooks.forEach(b=>{const k=cleanText(b.title)+"_"+cleanText(b.author);if(!groups[k])groups[k]=[];groups[k].push(b)});const dups=Object.values(groups).filter(g=>g.length>1);if(dups.length===0)return showToast("Temiz");alert(dups.length+" Mükerrer bulundu. Silmek için v8 kullanın.");}
-        window.shareBook=()=>{if(navigator.share)navigator.share({title:currentBook.title,text:`İncele: ${currentBook.title}`});else showToast("Kopyalandı");}
-        function updateProfileStats() { const validIds = globalBooks.map(b => b.id); const v = Object.values(userInteractions).filter(i => validIds.includes(i.bookId)); document.getElementById('stat-read').innerText = v.filter(i=>i.status==='read').length; document.getElementById('stat-want').innerText = v.filter(i=>i.status==='want').length; document.getElementById('stat-fav').innerText = v.filter(i=>i.fav).length; }
         
         async function fetchFromGoogle(q) { try{const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);const d=await r.json();return (d.items&&d.items.length>0)?d.items[0].volumeInfo:null;}catch(e){return null;} }
         window.fetchByISBN=async()=>{const i=document.getElementById('isbn-input').value;if(!i)return showToast("ISBN girin");showToast("Aranıyor...");const info=await fetchFromGoogle(`isbn:${i}`);if(info){document.getElementById('add-title').value=info.title;document.getElementById('add-author').value=info.authors?info.authors[0]:'';document.getElementById('add-desc').value=info.description||'';if(info.imageLinks)document.getElementById('add-cover').value=info.imageLinks.thumbnail.replace('http:','https:');showToast("Bulundu ✨");}else showToast("Bulunamadı ❌");}
@@ -566,8 +650,10 @@
         window.adminAddBook=async()=>{const t=document.getElementById('add-title').value;const a=document.getElementById('add-author').value;let c=document.getElementById('add-cover').value;const d=document.getElementById('add-desc').value; if(!t||!a)return showToast("Eksik bilgi!"); const exists = globalBooks.some(b => cleanText(b.title) === cleanText(t) && cleanText(b.author) === cleanText(a)); if(exists) return showToast("Bu kitap zaten var! 🛑"); if(!c){showToast("Kapak aranıyor...");const info=await fetchFromGoogle(`intitle:${t}+inauthor:${a}`);if(info&&info.imageLinks)c=info.imageLinks.thumbnail.replace('http:','https:');} await addDoc(collection(db,"books"),{title:t,author:a,cover:c,desc:d}); showToast("Eklendi ✅"); switchTab('library'); document.getElementById('add-title').value="";document.getElementById('add-author').value="";document.getElementById('add-cover').value="";document.getElementById('add-desc').value=""; }
         window.adminDeleteBook=async()=>{if(confirm("Silmek istiyor musun?")){await deleteDoc(doc(db,"books",currentBook.id));closeFullModal();showToast("Silindi");}}
         window.autoFixMissing=async()=>{if(!isAdmin)return; const missing=globalBooks.filter(b=>!b.cover||!b.desc||b.desc.length<5);if(missing.length===0)return showToast("Her şey tam! 👌"); showToast(`${missing.length} kitap taranıyor...`);for(const b of missing){const info=await fetchFromGoogle(`intitle:${b.title}+inauthor:${b.author}`);if(info){const u={};if(!b.cover&&info.imageLinks)u.cover=info.imageLinks.thumbnail.replace('http:','https:');if((!b.desc||b.desc.length<5)&&info.description)u.desc=info.description;if(Object.keys(u).length>0)await updateDoc(doc(db,"books",b.id),u);}} showToast("Güncelleme Bitti ✅");}
-        window.importData=(input)=>{if(!isAdmin)return; const file=input.files[0]; if(!file)return; const reader=new FileReader(); reader.onload=async function(e){try{let count=0; let skipped=0; const processBook = async (t, a, c, d) => { if(globalBooks.some(b => cleanText(b.title)===cleanText(t) && cleanText(b.author)===cleanText(a))) { skipped++; return; } await addDoc(collection(db,"books"),{title:t,author:a,cover:c,desc:d}); count++; }; if(file.name.endsWith('.csv')){ const lines=e.target.result.split('\n'); for(let i=1;i<lines.length;i++){const cols=lines[i].split(';'); if(cols.length>=2){ const t=cols[0].trim(); const a=cols[1].trim(); const cov=cols[2]?cols[2].trim():""; const desc=cols[3]?cols[3].trim():""; if(t&&a) await processBook(t,a,cov,desc); }}} else { const d=JSON.parse(e.target.result); for(const b of d){ await processBook(b.title, b.author, b.cover||"", b.desc||""); } } showToast(`${count} eklendi, ${skipped} pas geçildi`);}catch(err){showToast("Dosya hatası");}}; reader.readAsText(file); input.value='';}
+        window.findDuplicates=()=>{if(!isAdmin)return;const groups={};globalBooks.forEach(b=>{const k=cleanText(b.title)+"_"+cleanText(b.author);if(!groups[k])groups[k]=[];groups[k].push(b)});const dups=Object.values(groups).filter(g=>g.length>1);if(dups.length===0)return showToast("Temiz");alert(dups.length+" Mükerrer bulundu.");}
+        window.shareBook=()=>{if(navigator.share)navigator.share({title:currentBook.title,text:`İncele: ${currentBook.title}`});else showToast("Kopyalandı");}
         window.switchTab=(t)=>{document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+t).classList.add('active');document.querySelectorAll('.content-area:not(#page-auth)').forEach(e=>e.classList.add('hidden'));document.getElementById('page-'+t).classList.remove('hidden');if(t==='profile')filterProfile('read');}
+        window.closeFullModal = () => document.getElementById('full-modal').style.display = 'none';
         window.showToast=(m)=>{const t=document.getElementById('toast-container');const e=document.createElement('div');e.className='toast';e.innerText=m;t.appendChild(e);setTimeout(()=>e.classList.add('show'),50);setTimeout(()=>{e.classList.remove('show');setTimeout(()=>e.remove(),300)},3000);}
     </script>
 </body>
