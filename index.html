@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Kütüphanem Pro - v15.1 (Fix)</title>
+    <title>Kütüphanem Pro - v15.4</title>
     <style>
         /* --- TEMA --- */
         :root {
@@ -34,6 +34,10 @@
 
         input, button, textarea { outline: none; font-family: inherit; }
         .hidden { display: none !important; }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
         
         .header { position: fixed; top: 0; left: 0; right: 0; height: var(--bar-height); background-color: var(--header-footer-bg); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); z-index: 100; display: flex; align-items: center; justify-content: center; padding-top: env(safe-area-inset-top); }
         .header h1 { margin: 0; font-size: 18px; font-weight: 600; }
@@ -215,7 +219,7 @@
     <div id="page-add" class="content-area hidden">
         <h2 style="margin-bottom:20px;">Kitap Ekle</h2>
         <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <input type="number" id="isbn-input" class="input-std" style="margin:0;" placeholder="Barkod (ISBN)">
+            <input type="number" id="isbn-input" class="input-std" style="margin:0;" placeholder="Barkod (ISBN)" inputmode="numeric">
             <button onclick="fetchByISBN()" class="btn-main" style="width:60px; margin:0;">🔍</button>
         </div>
         <input type="text" id="add-title" class="input-std" placeholder="Kitap Adı">
@@ -286,14 +290,15 @@
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail, updatePassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, query, where, getDocs, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 👉 FIREBASE CONFIG
+        // 👉 FIREBASE CONFIG (BURAYA YENİ KODUNU YAPIŞTIRACAKSIN)
         const firebaseConfig = {
-  apiKey: "AIzaSyA6C1rPWUAD9fIA811nuSfQ1pnz3eTLXbY",
-  authDomain: "kutuphaneuygulamam.firebaseapp.com",
-  projectId: "kutuphaneuygulamam",
-  storageBucket: "kutuphaneuygulamam.firebasestorage.app",
-  messagingSenderId: "597391894142",
-  appId: "1:597391894142:web:1856ff2d16fe36c33bda2f"
+  apiKey: "AIzaSyDL0V_O0pNKoffz9Hbiq0XS6r8-QgFSj4M",
+  authDomain: "kutuphanempro.firebaseapp.com",
+  projectId: "kutuphanempro",
+  storageBucket: "kutuphanempro.firebasestorage.app",
+  messagingSenderId: "1078423422176",
+  appId: "1:1078423422176:web:615aff2996cf23d2087c85",
+  measurementId: "G-MN418DNR6F"
 };
 
         const app = initializeApp(firebaseConfig);
@@ -460,21 +465,31 @@
             ids.forEach(id => { const b = globalBooks.find(x => x.id === id); if(b) list.appendChild(createBookCard(b)); }); 
         }
 
-        // --- EXCEL EXPORT (FIXED BLOB METHOD) ---
+        // --- EXCEL EXPORT (TIRNAKSIZ & TEMİZ SÜRÜM & SEMICOLON CHECK) ---
         window.exportExcel = () => {
             if(!isAdmin) return;
             let csvContent = "\uFEFF"; // BOM
             csvContent += "Kitap Adı;Yazar;Kapak Linki;Özet\n";
 
+            // Temizleme Fonksiyonu: Tırnakları ve noktalı virgülleri temizler
+            const cleanForCsv = (text) => {
+                if (!text) return "";
+                return text.toString()
+                    .replace(/;/g, " -")    // Noktalı virgülleri tire yap (CSV patlamasın)
+                    .replace(/[\r\n]+/g, " ") // Alt satırları boşluk yap
+                    .trim();
+            };
+
             globalBooks.forEach(b => {
-                const title = `"${(b.title || "").replace(/"/g, '""')}"`;
-                const author = `"${(b.author || "").replace(/"/g, '""')}"`;
-                const cover = `"${(b.cover || "").replace(/"/g, '""')}"`;
-                const desc = `"${(b.desc || "").replace(/"/g, '""').replace(/\n/g, ' ')}"`;
+                const title = cleanForCsv(b.title);
+                const author = cleanForCsv(b.author);
+                const cover = cleanForCsv(b.cover);
+                const desc = cleanForCsv(b.desc);
+                
+                // Artık tırnak içine almıyoruz, noktalı virgül temizlendi
                 csvContent += `${title};${author};${cover};${desc}\n`;
             });
 
-            // BLOB KULLANIMI (Boyut Sınırını Aşmak İçin)
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
@@ -484,6 +499,46 @@
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
+        }
+
+        // --- IMPORT UPDATE (SMART SEPARATOR) ---
+        window.importData = (input) => {
+            if(!isAdmin) return;
+            const file = input.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    let count = 0; let skipped = 0;
+                    const processBook = async (t, a, c, d) => {
+                        if(globalBooks.some(b => cleanText(b.title) === cleanText(t) && cleanText(b.author) === cleanText(a))) { skipped++; return; }
+                        await addDoc(collection(db, "books"), { title: t, author: a, cover: c, desc: d });
+                        count++;
+                    };
+                    
+                    if(file.name.endsWith('.csv')) {
+                        const lines = e.target.result.split('\n');
+                        for(let i=1; i<lines.length; i++) {
+                            // Smart Separator: Önce noktalı virgül dene, olmazsa virgül dene
+                            let cols = lines[i].split(';');
+                            if(cols.length < 2) cols = lines[i].split(',');
+
+                            if(cols.length >= 2) {
+                                const t = cols[0].trim();
+                                const a = cols[1].trim();
+                                const cov = cols[2] ? cols[2].trim() : "";
+                                const desc = cols[3] ? cols[3].trim() : "";
+                                if(t && a) await processBook(t, a, cov, desc);
+                            }
+                        }
+                    } else {
+                        const d = JSON.parse(e.target.result);
+                        for(const b of d) { await processBook(b.title, b.author, b.cover||"", b.desc||""); }
+                    }
+                    showToast(`${count} eklendi, ${skipped} pas geçildi`);
+                } catch(err) { showToast("Dosya hatası"); }
+            };
+            reader.readAsText(file); // Default UTF-8
+            input.value = '';
         }
 
         // --- COMMON ---
