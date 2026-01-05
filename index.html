@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Kütüphanem Pro - v9.0 (Community)</title>
+    <title>Kütüphanem Pro - v15.1 (Fix)</title>
     <style>
         /* --- TEMA --- */
         :root {
@@ -18,6 +18,7 @@
             --success: #30d158;
             --warning: #ffd60a;
             --danger: #ff453a;
+            --super: #ffd60a;
             --border-color: rgba(255, 255, 255, 0.12);
             --bar-height: 60px;
         }
@@ -27,7 +28,7 @@
             background: var(--bg-color); margin: 0; padding: 0; color: var(--text-main);
             -webkit-tap-highlight-color: transparent; 
             padding-top: calc(var(--bar-height) + env(safe-area-inset-top));
-            padding-bottom: calc(var(--bar-height) + env(safe-area-inset-bottom));
+            padding-bottom: calc(var(--bar-height) + 20px + env(safe-area-inset-bottom));
             overflow-x: hidden;
         }
 
@@ -38,14 +39,15 @@
         .header h1 { margin: 0; font-size: 18px; font-weight: 600; }
 
         .content-area { padding: 20px; max-width: 600px; margin: 0 auto; min-height: 80vh; }
-        
+        .count-header { text-align: center; font-size: 13px; color: var(--text-dim); margin-top: -10px; margin-bottom: 15px; font-weight: 500; letter-spacing: 0.5px; }
+
         .input-std { width: 100%; height: 50px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 0 15px; color: white; font-size: 16px; box-sizing: border-box; margin-bottom: 12px; transition: 0.3s; }
         .input-std:focus { border-color: var(--accent); }
         textarea.input-std { height: 100px; padding-top: 15px; resize: none; }
         
         .btn-main { width: 100%; height: 50px; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; }
         .btn-outline { width: 100%; height: 50px; background: transparent; color: var(--accent); border: 1px solid var(--accent); border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;}
-        .btn-small { height: 35px; font-size: 13px; padding: 0 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: white; cursor: pointer; }
+        .btn-small { height: 35px; font-size: 12px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: white; cursor: pointer; flex: 1; white-space: nowrap; }
         .btn-icon { width: 50px; height: 50px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-dim); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px;}
 
         /* Kitap Kartı */
@@ -64,10 +66,10 @@
         .modal-body { padding: 25px 20px; max-width: 600px; margin: 0 auto; padding-bottom: 100px; text-align: center; }
         .btn-nav { background: none; border: none; color: var(--accent); font-size: 16px; font-weight: 400; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
-        /* Profil & Stats */
-        .social-stats { display: flex; justify-content: center; gap: 20px; margin: 15px 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; }
-        .stat-item { font-size: 12px; color: var(--text-dim); display: flex; flex-direction: column; align-items: center; }
+        .social-stats { display: flex; justify-content: center; gap: 15px; margin: 15px 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+        .stat-item { font-size: 11px; color: var(--text-dim); display: flex; flex-direction: column; align-items: center; }
         .stat-val { font-size: 18px; font-weight: bold; color: white; margin-bottom: 2px; }
+        
         .author-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .author-card { background: var(--card-bg); padding: 20px 10px; border-radius: 16px; text-align: center; border: 1px solid var(--border-color); cursor: pointer; display: flex; flex-direction: column; align-items: center; }
         .author-img-box { width: 60px; height: 60px; border-radius: 50%; background: #333; margin-bottom: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 2px solid var(--border-color); font-size: 24px; }
@@ -77,25 +79,37 @@
         .star-rating { display: flex; justify-content: center; gap: 8px; margin: 15px 0; }
         .star { font-size: 28px; color: #444; cursor: pointer; transition: 0.2s; } .star.filled { color: var(--warning); }
 
-        /* USER LIST STYLE */
         .user-row { display: flex; align-items: center; justify-content: space-between; padding: 15px; background: var(--card-bg); border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 5px; border-radius: 10px; cursor: pointer; }
         .user-info { display: flex; flex-direction: column; align-items: flex-start; }
-        .user-role-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #333; color: #aaa; margin-top: 3px; }
+        .user-role-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #333; color: #aaa; margin-top: 3px; margin-left: 5px; font-weight: 600; }
         .user-role-badge.admin { background: rgba(10,132,255,0.2); color: var(--accent); }
+        .user-role-badge.super { background: linear-gradient(45deg, #ffd700, #ffa500); color: #000; box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
         .btn-user-action { height: 30px; font-size: 11px; padding: 0 10px; border-radius: 6px; border:none; cursor: pointer; color:white; margin-left: 5px;}
 
-        /* TOGGLE SWITCH */
-        .toggle-switch { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); padding: 15px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 15px; }
-        .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 24px; width: 24px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--accent); }
-        input:checked + .slider:before { transform: translateX(22px); }
+        .toggle-switch-compact { display: flex; align-items: center; justify-content: center; gap: 10px; background: transparent; padding: 5px; margin-bottom: 15px; }
+        .toggle-switch-compact span { font-size: 12px; color: var(--text-dim); }
+        .switch-sm { position: relative; display: inline-block; width: 34px; height: 20px; }
+        .switch-sm input { opacity: 0; width: 0; height: 0; }
+        .slider-sm { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
+        .slider-sm:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider-sm { background-color: var(--accent); }
+        input:checked + .slider-sm:before { transform: translateX(14px); }
 
-        /* MESSAGES */
         .msg-item { background: var(--card-bg); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; margin-bottom: 10px; text-align: left; }
         .msg-header { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); margin-bottom: 5px; }
+        
+        .comment-row { border-bottom: 1px solid #333; padding: 10px 0; text-align: left; position: relative; }
+        .comment-user { color: var(--accent); font-size: 12px; font-weight: bold; margin-bottom: 2px; }
+        .comment-text { font-size: 13px; color: #ddd; line-height: 1.4; padding-right: 25px; }
+        .comment-del { position: absolute; right: 0; top: 10px; color: #666; cursor: pointer; padding: 5px; }
+        .comment-del:hover { color: var(--danger); }
+
+        .my-comment-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start; cursor: pointer; text-align: left; }
+        .my-comment-cover { width: 35px; height: 50px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
+        .my-comment-info { flex: 1; }
+        .my-comment-book { font-weight: 600; font-size: 14px; color: white; margin-bottom: 2px; }
+        .my-comment-date { font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
+        .my-comment-body { font-size: 12px; color: #ccc; line-height: 1.3; }
 
         .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: var(--bar-height); background-color: var(--header-footer-bg); backdrop-filter: blur(20px); border-top: 1px solid var(--border-color); z-index: 100; display: flex; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); }
         .tab-btn { background: none; border: none; padding: 0; color: var(--text-dim); flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -129,57 +143,73 @@
             <input type="text" id="search-input" class="input-std" style="margin:0;" placeholder="Kitap veya yazar ara..." onkeyup="applyFilters()">
             <button class="btn-icon" onclick="toggleSort()" id="btn-sort" title="Sırala">⇅</button>
         </div>
+        <div id="count-books" class="count-header">Yükleniyor...</div>
         <div id="book-list"></div>
     </div>
 
-    <div id="page-authors" class="content-area hidden"><div id="authors-grid" class="author-grid"></div></div>
+    <div id="page-authors" class="content-area hidden">
+        <div id="count-authors" class="count-header" style="margin-top:10px;">Yükleniyor...</div>
+        <div id="authors-grid" class="author-grid"></div>
+    </div>
 
     <div id="page-users" class="content-area hidden">
-        <h2 style="margin-bottom:20px;">Okurlar</h2>
+        <h2 style="margin-bottom:0;">Okurlar</h2>
+        <div id="count-users" class="count-header" style="margin-top:5px; margin-bottom:20px;">Yükleniyor...</div>
         <div id="users-list"></div>
     </div>
 
     <div id="page-profile" class="content-area hidden" style="text-align:center;">
         <div style="width:100px; height:100px; margin: 20px auto 10px; background:#333; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:40px;">👤</div>
-        <h2 id="profile-name" style="margin:5px 0;">Kullanıcı</h2>
+        
+        <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+            <h2 id="profile-name" style="margin:5px 0;">Kullanıcı</h2>
+            <span onclick="toggleNameEdit()" style="cursor:pointer; font-size:16px; color:var(--accent); opacity:0.8;">✏️</span>
+        </div>
         <p id="profile-email" style="color:var(--text-dim); font-size:13px; margin-top:0;">mail@mail.com</p>
         <div id="profile-role-badge" style="color:var(--accent); font-size:12px; margin-bottom:10px; font-weight:bold;"></div>
         
-        <div class="toggle-switch">
-            <span style="font-size:14px;">Profilimi Gizle</span>
-            <label class="switch">
-                <input type="checkbox" id="privacy-check" onchange="togglePrivacy()">
-                <span class="slider"></span>
-            </label>
+        <div id="name-edit-area" class="hidden" style="margin-bottom:15px; animation: slideUp 0.2s;">
+            <div style="display:flex; gap:5px; justify-content:center; max-width:250px; margin:0 auto;">
+                <input type="text" id="new-username" class="input-std" placeholder="Yeni İsim" style="margin:0; height:35px; font-size:14px;">
+                <button onclick="updateUserProfile()" class="btn-main" style="width:auto; height:35px; font-size:13px; padding:0 15px;">Kaydet</button>
+            </div>
         </div>
 
-        <div style="display:flex; gap:10px; justify-content:center; margin-bottom:15px;">
-            <input type="text" id="new-username" class="input-std" placeholder="İsim Değiştir" style="margin:0; width:150px; height:40px; font-size:14px;">
-            <button onclick="updateUserProfile()" class="btn-main" style="width:auto; height:40px; font-size:14px; padding:0 15px;">Kaydet</button>
+        <div class="toggle-switch-compact">
+            <span>Profilimi Gizle</span>
+            <label class="switch-sm"><input type="checkbox" id="privacy-check" onchange="togglePrivacy()"><span class="slider-sm"></span></label>
         </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">
-            <button class="btn-outline" onclick="openRequestModal()">📩 İstek Gönder</button>
-            <button class="btn-outline" onclick="document.getElementById('pass-change-area').classList.toggle('hidden')">🔑 Şifre Değiştir</button>
-        </div>
-
-        <div id="pass-change-area" class="hidden" style="background:#2c2c2e; padding:15px; border-radius:10px; margin-bottom:20px;">
-            <input type="password" id="new-pass" class="input-std" placeholder="Yeni Şifre" style="height:40px; font-size:14px;">
-            <button class="btn-main" style="height:40px;" onclick="changePass()">Güncelle</button>
-        </div>
-
+        
         <div class="social-stats">
             <div class="stat-item"><span class="stat-val" id="stat-read">0</span>OKUDUM</div>
             <div class="stat-item"><span class="stat-val" id="stat-want">0</span>LİSTEMDE</div>
             <div class="stat-item"><span class="stat-val" id="stat-fav">0</span>FAVORİ</div>
+            <div class="stat-item"><span class="stat-val" id="stat-com">0</span>YORUM</div>
         </div>
-        <div style="display:flex; justify-content: center; gap:10px; margin-bottom: 20px;">
+
+        <div style="display:flex; justify-content: center; gap:5px; margin-bottom: 20px;">
              <button class="btn-small" onclick="filterProfile('read')">Okuduklarım</button>
              <button class="btn-small" onclick="filterProfile('want')">Listem</button>
              <button class="btn-small" onclick="filterProfile('fav')">Favoriler</button>
+             <button class="btn-small" onclick="filterProfile('comments')">Yorumlarım</button>
         </div>
-        <div id="profile-list" style="text-align:left;"></div>
-        <button onclick="logout()" style="margin-top:30px; background:none; border:none; color:var(--danger);">Çıkış Yap</button>
+
+        <div id="profile-list" style="text-align:left; margin-bottom:30px;"></div>
+
+        <div style="border-top:1px solid #333; padding-top:20px; display:flex; flex-direction:column; gap:10px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <button class="btn-outline" onclick="shareProfile()">🔗 Profili Paylaş</button>
+                <button class="btn-outline" onclick="openRequestModal()">📩 İstek Yap</button>
+            </div>
+            
+            <button class="btn-outline" style="border-color:#444; color:#ccc;" onclick="document.getElementById('pass-change-area').classList.toggle('hidden')">🔑 Şifre Değiştir</button>
+            <div id="pass-change-area" class="hidden" style="background:#2c2c2e; padding:15px; border-radius:10px;">
+                <input type="password" id="new-pass" class="input-std" placeholder="Yeni Şifre" style="height:40px; font-size:14px;">
+                <button class="btn-main" style="height:40px;" onclick="changePass()">Güncelle</button>
+            </div>
+
+            <button onclick="logout()" class="btn-main" style="background:var(--danger); margin-top:10px;">Çıkış Yap</button>
+        </div>
     </div>
 
     <div id="page-add" class="content-area hidden">
@@ -202,7 +232,7 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                 <button class="btn-small" onclick="viewMessages()">📩 Mesajlar</button>
                 <button class="btn-small" onclick="findDuplicates()">🧹 Mükerrerleri Bul</button>
-                <button class="btn-small" onclick="exportData()">💾 Yedek Al</button>
+                <button class="btn-small" style="background:#2ecc71; border-color:#2ecc71;" onclick="exportExcel()">📤 Excel Olarak İndir</button>
                 <button class="btn-small" onclick="autoFixMissing()">⚡ Eksikleri Tara</button>
                 <button class="btn-small" onclick="document.getElementById('file-import').click()">📂 Excel'den Yükle</button>
             </div>
@@ -218,7 +248,7 @@
             <button id="btn-edit-auth-mode" class="btn-nav" onclick="toggleAuthorEditMode()" style="display:none;">Düzenle</button>
         </div>
         <div class="modal-body" style="text-align:center;">
-            <div id="modal-view-mode"> </div>
+            <div id="modal-view-mode"></div>
             
             <div id="modal-edit-mode" class="hidden" style="text-align:left;">
                 <label style="font-size:12px;color:#666;">Kitap Adı</label><input type="text" id="edit-title" class="input-std">
@@ -256,7 +286,7 @@
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail, updatePassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, query, where, getDocs, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 👉 BURAYA FIREBASE CONFIG
+        // 👉 FIREBASE CONFIG
         const firebaseConfig = {
   apiKey: "AIzaSyA6C1rPWUAD9fIA811nuSfQ1pnz3eTLXbY",
   authDomain: "kutuphaneuygulamam.firebaseapp.com",
@@ -269,8 +299,6 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        
-        // YENİ SÜPER ADMİN
         const SUPER_ADMIN_EMAIL = "mete.serkanali@gmail.com";
 
         let currentUser = null;
@@ -278,6 +306,7 @@
         let isLoginMode = true;
         let globalBooks = [];
         let userInteractions = {};
+        let myComments = []; 
         let currentBook = null;
         let currentAuthorName = null;
         let sortAsc = true; 
@@ -290,282 +319,85 @@
             if(!email || !pass) return showToast("Bilgileri giriniz");
             try {
                 let userCred;
-                if(isLoginMode) {
-                    userCred = await signInWithEmailAndPassword(auth, email, pass);
-                } else {
-                    userCred = await createUserWithEmailAndPassword(auth, email, pass);
-                    await updateProfile(userCred.user, { displayName: "Okur" });
-                }
+                if(isLoginMode) { userCred = await signInWithEmailAndPassword(auth, email, pass); } 
+                else { userCred = await createUserWithEmailAndPassword(auth, email, pass); await updateProfile(userCred.user, { displayName: "Okur" }); }
                 const userRef = doc(db, "users", userCred.user.uid);
                 const userSnap = await getDoc(userRef);
-                if(!userSnap.exists()) {
-                    await setDoc(userRef, { email: email, role: 'user', isPrivate: false, createdAt: Date.now() });
-                }
+                if(!userSnap.exists()) { await setDoc(userRef, { email: email, role: 'user', isPrivate: false, createdAt: Date.now() }); }
             } catch(e) { showToast("Hata: " + e.message); }
         }
         window.toggleAuthMode = () => { isLoginMode = !isLoginMode; document.getElementById('auth-title').innerText = isLoginMode ? "Giriş Yap" : "Kayıt Ol"; document.getElementById('btn-auth').innerText = isLoginMode ? "Giriş Yap" : "Kayıt Ol"; }
         window.logout = () => signOut(auth);
+        window.resetPass = async () => { const email = prompt("E-posta adresini gir:"); if(email) { try { await sendPasswordResetEmail(auth, email); alert("Sıfırlama bağlantısı gönderildi!"); } catch(e) { alert("Hata: " + e.message); } } }
+        window.changePass = async () => { const newP = document.getElementById('new-pass').value; if(!newP || newP.length < 6) return alert("Şifre en az 6 karakter olmalı"); try { await updatePassword(currentUser, newP); alert("Şifre değişti!"); document.getElementById('new-pass').value=""; document.getElementById('pass-change-area').classList.add('hidden'); } catch(e) { alert("Güvenlik nedeniyle çıkış yapıp tekrar girmelisin."); } }
         
-        window.resetPass = async () => {
-             const email = prompt("E-posta adresini gir:");
-             if(email) {
-                 try { await sendPasswordResetEmail(auth, email); alert("Sıfırlama bağlantısı gönderildi!"); }
-                 catch(e) { alert("Hata: " + e.message); }
-             }
-        }
-        window.changePass = async () => {
-            const newP = document.getElementById('new-pass').value;
-            if(!newP || newP.length < 6) return alert("Şifre en az 6 karakter olmalı");
-            try { await updatePassword(currentUser, newP); alert("Şifre değişti!"); document.getElementById('new-pass').value=""; }
-            catch(e) { alert("Güvenlik nedeniyle çıkış yapıp tekrar girmelisin."); }
-        }
+        window.toggleNameEdit = () => { document.getElementById('name-edit-area').classList.toggle('hidden'); }
 
-        window.updateUserProfile = async () => {
-            const name = document.getElementById('new-username').value;
-            if(!name) return;
-            await updateProfile(currentUser, { displayName: name });
-            document.getElementById('profile-name').innerText = name; showToast("İsim güncellendi ✅");
+        window.updateUserProfile = async () => { 
+            const name = document.getElementById('new-username').value; 
+            if(!name) return; 
+            await updateProfile(currentUser, { displayName: name }); 
+            await updateDoc(doc(db, "users", currentUser.uid), { displayName: name }); 
+            document.getElementById('profile-name').innerText = name; 
+            window.toggleNameEdit();
+            showToast("İsim güncellendi ✅"); 
         }
-        
-        window.togglePrivacy = async () => {
-            const isPrivate = document.getElementById('privacy-check').checked;
-            await updateDoc(doc(db, "users", currentUser.uid), { isPrivate: isPrivate });
-            showToast(isPrivate ? "Profil gizlendi 🔒" : "Profil herkese açık 🌍");
-        }
+        window.togglePrivacy = async () => { const isPrivate = document.getElementById('privacy-check').checked; await updateDoc(doc(db, "users", currentUser.uid), { isPrivate: isPrivate }); showToast(isPrivate ? "Profil gizlendi 🔒" : "Profil herkese açık 🌍"); }
+        window.shareProfile = () => { const text = `Kütüphanem profilime göz at: ${currentUser.displayName}`; if(navigator.share) navigator.share({ title: 'Profilim', text: text }); else showToast("Paylaşım desteklenmiyor"); }
 
         onAuthStateChanged(auth, async (user) => {
             if(user) {
-                const userRef = doc(db, "users", user.uid);
-                const userSnap = await getDoc(userRef);
+                const userRef = doc(db, "users", user.uid); const userSnap = await getDoc(userRef);
                 if (!userSnap.exists() && user.email !== SUPER_ADMIN_EMAIL) { await signOut(auth); alert("Hesabınız silinmiş."); return; }
-
                 currentUser = user;
-                let role = 'user';
-                let isPrivate = false;
-                if(userSnap.exists()) {
-                    role = userSnap.data().role;
-                    isPrivate = userSnap.data().isPrivate || false;
-                }
+                let role = 'user'; let isPrivate = false;
+                if(userSnap.exists()) { role = userSnap.data().role; isPrivate = userSnap.data().isPrivate || false; }
                 if(user.email === SUPER_ADMIN_EMAIL) role = 'admin';
                 isAdmin = (role === 'admin');
-
-                document.getElementById('page-auth').classList.add('hidden');
-                document.getElementById('main-tabs').classList.remove('hidden');
-                document.getElementById('profile-email').innerText = user.email;
-                document.getElementById('profile-name').innerText = user.displayName || "Okur";
-                document.getElementById('profile-role-badge').innerText = isAdmin ? "YÖNETİCİ" : "ÜYE";
+                document.getElementById('page-auth').classList.add('hidden'); document.getElementById('main-tabs').classList.remove('hidden');
+                document.getElementById('profile-email').innerText = user.email; document.getElementById('profile-name').innerText = user.displayName || "Okur"; 
+                document.getElementById('profile-role-badge').innerText = isAdmin ? (user.email===SUPER_ADMIN_EMAIL ? "SÜPER ADMİN" : "YÖNETİCİ") : "ÜYE";
                 document.getElementById('privacy-check').checked = isPrivate;
-                
-                if(isAdmin) document.getElementById('tab-add').classList.remove('hidden'); 
-                else document.getElementById('tab-add').classList.add('hidden');
-                
-                listenToUsers(); listenToBooks(); listenToInteractions(); switchTab('library');
-            } else {
-                currentUser = null;
-                document.getElementById('page-auth').classList.remove('hidden');
-                document.getElementById('main-tabs').classList.add('hidden');
-                document.querySelectorAll('.content-area:not(#page-auth)').forEach(e=>e.classList.add('hidden'));
-            }
+                if(isAdmin) document.getElementById('tab-add').classList.remove('hidden'); else document.getElementById('tab-add').classList.add('hidden');
+                listenToUsers(); listenToBooks(); listenToInteractions(); listenToUserComments(); switchTab('library');
+            } else { currentUser = null; document.getElementById('page-auth').classList.remove('hidden'); document.getElementById('main-tabs').classList.add('hidden'); document.querySelectorAll('.content-area:not(#page-auth)').forEach(e=>e.classList.add('hidden')); }
         });
 
-        // --- USER LIST (PUBLIC) & MESSAGING ---
-        function listenToUsers() {
-            onSnapshot(collection(db, "users"), (snap) => {
-                const list = document.getElementById('users-list'); list.innerHTML = "";
-                snap.forEach(d => {
-                    const u = d.data();
-                    const isSuper = (u.email === SUPER_ADMIN_EMAIL);
-                    const isUserAdmin = (u.role === 'admin');
-                    const div = document.createElement('div'); div.className = "user-row";
-                    
-                    // Admin için kontroller, Normal kullanıcı için sadece görüntüleme
-                    let adminControls = "";
-                    if(isAdmin && !isSuper) {
-                        adminControls = `
-                            <div style="display:flex;">
-                                <button class="btn-user-action" style="background:${isUserAdmin?'#e67e22':'#2ecc71'};" onclick="event.stopPropagation(); toggleUserRole('${d.id}', '${u.role}')">${isUserAdmin ? 'Yetki Al' : 'Yönetici Yap'}</button>
-                                <button class="btn-user-action" style="background:var(--danger);" onclick="event.stopPropagation(); deleteUser('${d.id}')">Sil</button>
-                            </div>`;
-                    }
-
-                    div.onclick = () => viewOtherProfile(d.id, u);
-                    div.innerHTML = `
-                        <div class="user-info">
-                            <span style="font-weight:600;">${u.email}</span>
-                            <span class="user-role-badge ${isUserAdmin?'admin':''}">${isUserAdmin ? 'Yönetici' : 'Üye'} ${u.isPrivate ? '🔒' : ''}</span>
-                        </div>
-                        ${adminControls}
-                    `;
-                    list.appendChild(div);
-                });
-            });
-        }
-        
-        // BAŞKA PROFİLİ GÖRME
-        window.viewOtherProfile = async (uid, userData) => {
-            if(uid === currentUser.uid) { switchTab('profile'); return; }
-            if(userData.isPrivate && !isAdmin) return showToast("Bu profil gizli 🔒");
-
-            document.getElementById('modal-view-mode').innerHTML = "<div style='padding:20px;'>Yükleniyor...</div>";
-            document.getElementById('full-modal').style.display = 'block';
-            document.getElementById('modal-title').innerText = "Kullanıcı Profili";
-            
-            // Gizle
-            document.getElementById('modal-edit-mode').classList.add('hidden');
-            document.getElementById('modal-edit-auth-mode').classList.add('hidden');
-            document.getElementById('modal-req-mode').classList.add('hidden');
-            
-            // Kullanıcının kitaplarını çek
-            const q = query(collection(db, "interactions"), where("uid", "==", uid));
-            const snap = await getDocs(q);
-            let userBooks = [];
-            snap.forEach(d => {
-                const b = globalBooks.find(x => x.id === d.data().bookId);
-                if(b) userBooks.push(b);
-            });
-            
-            let html = `
-                <div style="text-align:center; margin-bottom:20px;">
-                    <div style="font-size:40px;">👤</div>
-                    <h3>${userData.email}</h3>
-                    <p style="color:#888;">${userBooks.length} Kitaplık Etkileşimi</p>
-                </div>
-                <div style="text-align:left;">
-            `;
-            if(userBooks.length === 0) html += "<p style='text-align:center; color:#666;'>Henüz kitap yok.</p>";
-            userBooks.forEach(b => {
-                 html += `<div style="padding:10px; border-bottom:1px solid #333; display:flex; gap:10px; align-items:center;">
-                    <img src="${b.cover||''}" style="width:30px; height:45px; object-fit:cover; border-radius:4px;">
-                    <div>${b.title}</div>
-                 </div>`;
-            });
-            html += "</div>";
-            document.getElementById('modal-view-mode').innerHTML = html;
-        }
-
-        window.toggleUserRole = async (uid, currentRole) => {
-            if(!isAdmin) return;
-            const newRole = currentRole === 'admin' ? 'user' : 'admin';
-            if(confirm(`Yetkiyi değiştirmek istiyor musun?`)) await updateDoc(doc(db, "users", uid), { role: newRole });
-        }
-        window.deleteUser = async (uid) => {
-            if(!isAdmin) return;
-            if(confirm("Kullanıcıyı silmek istediğine emin misin?")) await deleteDoc(doc(db, "users", uid));
-        }
-        
-        // --- MESSAGING ---
-        window.openRequestModal = () => {
-            document.getElementById('modal-view-mode').classList.add('hidden');
-            document.getElementById('modal-edit-mode').classList.add('hidden');
-            document.getElementById('modal-edit-auth-mode').classList.add('hidden');
-            document.getElementById('modal-req-mode').classList.remove('hidden');
-            document.getElementById('full-modal').style.display = 'block';
-            document.getElementById('modal-title').innerText = "İstek Gönder";
-            // Butonları gizle
-            document.getElementById('btn-edit-mode').style.display='none';
-            document.getElementById('btn-edit-auth-mode').style.display='none';
-        }
-        
-        window.sendRequest = async () => {
-            const txt = document.getElementById('req-text').value;
-            if(!txt) return;
-            await addDoc(collection(db, "messages"), {
-                uid: currentUser.uid,
-                email: currentUser.email,
-                text: txt,
-                date: Date.now()
-            });
-            showToast("Mesaj gönderildi 📨");
-            closeFullModal();
-            document.getElementById('req-text').value = "";
-        }
-        
-        window.viewMessages = async () => {
-            if(!isAdmin) return;
-            document.getElementById('modal-view-mode').classList.remove('hidden');
-            document.getElementById('modal-edit-mode').classList.add('hidden');
-            document.getElementById('modal-req-mode').classList.add('hidden');
-            document.getElementById('full-modal').style.display = 'block';
-            document.getElementById('modal-title').innerText = "Gelen Mesajlar";
-            
-            const listDiv = document.getElementById('modal-view-mode');
-            listDiv.innerHTML = "Yükleniyor...";
-            
-            const q = query(collection(db, "messages"), orderBy("date", "desc"));
-            const snap = await getDocs(q);
-            
-            if(snap.empty) { listDiv.innerHTML = "Mesaj yok."; return; }
-            
-            let html = "";
-            snap.forEach(d => {
-                const m = d.data();
-                const date = new Date(m.date).toLocaleDateString();
-                html += `
-                    <div class="msg-item">
-                        <div class="msg-header"><span>${m.email}</span><span>${date}</span></div>
-                        <div>${m.text}</div>
-                    </div>
-                `;
-            });
-            listDiv.innerHTML = html;
-        }
-
-        // --- DATA & RENDER ---
-        function listenToBooks() { onSnapshot(collection(db, "books"), (snap) => { globalBooks = []; snap.forEach(d => globalBooks.push({id: d.id, ...d.data()})); applyFilters(); renderAuthors(); }); }
+        // --- LISTENERS ---
+        function listenToUsers() { onSnapshot(collection(db, "users"), (snap) => { const list = document.getElementById('users-list'); list.innerHTML = ""; document.getElementById('count-users').innerText = `Toplam: ${snap.size} Okur`; snap.forEach(d => { const u = d.data(); const isSuper = (u.email === SUPER_ADMIN_EMAIL); const isUserAdmin = (u.role === 'admin'); const displayTitle = u.displayName || u.email.split('@')[0]; let roleLabel="Üye", roleClass=""; if(isSuper){roleLabel="Süper Admin";roleClass="super";}else if(isUserAdmin){roleLabel="Yönetici";roleClass="admin";} let adminControls = ""; if(isAdmin && !isSuper) { adminControls = `<div style="display:flex;"><button class="btn-user-action" style="background:${isUserAdmin?'#e67e22':'#2ecc71'};" onclick="event.stopPropagation(); toggleUserRole('${d.id}', '${u.role}')">${isUserAdmin ? 'Yetki Al' : 'Yönetici Yap'}</button><button class="btn-user-action" style="background:var(--danger);" onclick="event.stopPropagation(); deleteUser('${d.id}')">Sil</button></div>`; } const div = document.createElement('div'); div.className = "user-row"; div.onclick = () => viewOtherProfile(d.id, u); div.innerHTML = `<div class="user-info"><span style="font-weight:600; font-size:15px; color:${u.displayName ? 'white' : '#ccc'}">${displayTitle}</span><div style="font-size:12px; color:#666; margin-top:2px;">${u.email} <span class="user-role-badge ${roleClass}">${roleLabel} ${u.isPrivate ? '🔒' : ''}</span></div></div>${adminControls}`; list.appendChild(div); }); }); }
+        function listenToBooks() { onSnapshot(collection(db, "books"), (snap) => { globalBooks = []; snap.forEach(d => globalBooks.push({id: d.id, ...d.data()})); document.getElementById('count-books').innerText = `Toplam: ${snap.size} Kitap`; applyFilters(); renderAuthors(); }); }
         function listenToInteractions() { if(!currentUser)return; const q=query(collection(db,"interactions"),where("uid","==",currentUser.uid)); onSnapshot(q,(snap)=>{ userInteractions={}; snap.forEach(d=>userInteractions[d.data().bookId]=d.data()); applyFilters(); updateProfileStats(); }); }
-
-        window.applyFilters = () => {
-            const q = document.getElementById('search-input').value.toLowerCase();
-            const list = globalBooks.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
-            list.sort((a,b) => { return sortAsc ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title); });
-            const container = document.getElementById('book-list'); container.innerHTML = "";
-            list.forEach(b => container.appendChild(createBookCard(b)));
-        }
-        window.toggleSort = () => { sortAsc = !sortAsc; document.getElementById('btn-sort').innerText = sortAsc ? "A-Z" : "Z-A"; applyFilters(); showToast(sortAsc ? "A'dan Z'ye ⬇️" : "Z'den A'ya ⬆️"); }
-
-        function createBookCard(b) {
-            const i = userInteractions[b.id] || {};
-            let statusColor = i.status==='read'?'var(--success)':i.status==='want'?'var(--accent)':i.fav?'var(--warning)':null;
-            const div = document.createElement('div'); div.className = "book-item"; div.onclick = () => openBookModal(b);
-            let coverHtml = "";
-            if(b.cover && b.cover.length > 5) coverHtml = `<img src="${b.cover}">`;
-            else coverHtml = `<div class="default-cover">📚</div>`;
-            div.innerHTML = `<div class="book-icon-box">${coverHtml}</div><div class="book-details"><div class="book-title">${b.title}</div><div class="book-author">${b.author}</div></div>${statusColor?`<div class="status-badge show" style="background:${statusColor}"></div>`:''}`;
-            return div;
-        }
-
-        function renderAuthors() {
-            const grid = document.getElementById('authors-grid'); grid.innerHTML = "";
-            const groups = {}; globalBooks.forEach(b => { if(!groups[b.author])groups[b.author]=[]; groups[b.author].push(b); });
-            Object.keys(groups).sort().forEach(auth => {
-                const div = document.createElement('div'); div.className = "author-card";
-                div.onclick = () => openAuthorModal(auth, groups[auth]);
-                div.innerHTML = `<div class="author-img-box" id="thumb-auth-${auth.replace(/\W/g,'')}">👤</div><div style="font-weight:600;font-size:15px;">${auth}</div><div style="font-size:12px;color:#999;">${groups[auth].length} Kitap</div>`;
-                grid.appendChild(div);
-                loadAuthorImage(auth, `thumb-auth-${auth.replace(/\W/g,'')}`);
+        
+        function listenToUserComments() {
+            if(!currentUser) return;
+            const q = query(collection(db, "comments"), where("uid", "==", currentUser.uid));
+            onSnapshot(q, (snap) => {
+                myComments = [];
+                snap.forEach(d => myComments.push({id: d.id, ...d.data()}));
+                myComments.sort((a,b) => (b.date || 0) - (a.date || 0));
+                document.getElementById('stat-com').innerText = myComments.length;
             });
         }
-        async function loadAuthorImage(name, elId) {
-             const el=document.getElementById(elId); if(!el)return;
-             try { const snap=await getDoc(doc(db,"authors",name)); if(snap.exists()&&snap.data().img){el.innerHTML=`<img src="${snap.data().img}" style="width:100%;height:100%;object-fit:cover;">`; return;} } catch(e){}
-             try { const r=await fetch(`https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`); const d=await r.json(); if(d.thumbnail){ el.innerHTML=`<img src="${d.thumbnail.source}" style="width:100%;height:100%;object-fit:cover;">`; await setDoc(doc(db,"authors",name),{img:d.thumbnail.source},{merge:true}); } } catch(e){}
-        }
 
+        window.applyFilters = () => { const q = document.getElementById('search-input').value.toLowerCase(); const list = globalBooks.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)); list.sort((a,b) => { return sortAsc ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title); }); const container = document.getElementById('book-list'); container.innerHTML = ""; list.forEach(b => container.appendChild(createBookCard(b))); }
+        window.toggleSort = () => { sortAsc = !sortAsc; document.getElementById('btn-sort').innerText = sortAsc ? "A-Z" : "Z-A"; applyFilters(); showToast(sortAsc ? "A'dan Z'ye ⬇️" : "Z'den A'ya ⬆️"); }
+        
+        window.goToAuthor = (name) => { const authorBooks = globalBooks.filter(b => b.author === name); openAuthorModal(name, authorBooks); }
+        function createBookCard(b) { const i = userInteractions[b.id] || {}; let statusColor = i.status==='read'?'var(--success)':i.status==='want'?'var(--accent)':i.fav?'var(--warning)':null; const div = document.createElement('div'); div.className = "book-item"; div.onclick = () => openBookModal(b); let coverHtml = (b.cover && b.cover.length > 5) ? `<img src="${b.cover}">` : `<div class="default-cover">📚</div>`; div.innerHTML = `<div class="book-icon-box">${coverHtml}</div><div class="book-details"><div class="book-title">${b.title}</div><div class="book-author">${b.author}</div></div>${statusColor?`<div class="status-badge show" style="background:${statusColor}"></div>`:''}`; return div; }
+        
         // --- MODALS ---
         window.openBookModal = async (book) => {
             currentBook = book;
             document.getElementById('modal-view-mode').classList.remove('hidden'); document.getElementById('modal-edit-mode').classList.add('hidden'); document.getElementById('modal-edit-auth-mode').classList.add('hidden'); document.getElementById('modal-req-mode').classList.add('hidden');
             document.getElementById('btn-edit-mode').style.display = isAdmin ? 'block' : 'none'; document.getElementById('btn-edit-auth-mode').style.display = 'none'; document.getElementById('btn-edit-mode').innerText = "Düzenle";
-
             const i = userInteractions[book.id] || {};
             const snap = await getDocs(query(collection(db, "interactions"), where("bookId", "==", book.id)));
             let r=0, w=0, f=0; snap.forEach(d=>{ const v=d.data(); if(v.status==='read')r++; if(v.status==='want')w++; if(v.fav)f++; });
-
             let coverDisplay = book.cover ? `<img src="${book.cover}" style="width:140px; height:210px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5); margin-bottom:15px;">` : `<div style="width:140px; height:210px; border-radius:12px; background:#333; display:flex; align-items:center; justify-content:center; font-size:50px; margin:0 auto 15px;">📚</div>`;
-
             document.getElementById('modal-view-mode').innerHTML = `
                 ${coverDisplay}
-                <h2 style="font-size:22px; margin-bottom:5px;">${book.title}</h2><span style="color:var(--accent); font-size:16px;">${book.author}</span>
+                <h2 style="font-size:22px; margin-bottom:5px;">${book.title}</h2>
+                <span onclick="goToAuthor('${book.author}')" style="color:var(--accent); font-size:16px; cursor:pointer; text-decoration:underline;">${book.author}</span>
                 <div class="social-stats"><div class="stat-item"><span class="stat-val">${r}</span>Okudu</div><div class="stat-item"><span class="stat-val">${w}</span>Listede</div><div class="stat-item"><span class="stat-val">${f}</span>Favori</div></div>
                 <div class="star-rating">${[1,2,3,4,5].map(n=>`<span class="star ${(i.rating||0)>=n?'filled':''}" onclick="setRating(${n})">★</span>`).join('')}</div>
                 <div class="action-grid">
@@ -577,65 +409,100 @@
                 <div style="text-align:left; background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-top:20px;">
                     <h4 style="margin:0 0 5px 0; color:#999;">Özet</h4><p style="color:#ddd; font-size:14px; line-height:1.5;">${book.desc||"Özet yok."}</p>
                 </div>
-                <div style="margin-top:20px; text-align:left;"><h4 style="margin-bottom:10px;">Yorumlar</h4><div id="comments-list">...</div><div style="display:flex; gap:10px; margin-top:10px;"><input type="text" id="comment-input" class="input-std" placeholder="Yorum..." style="margin:0; height:40px;"><button onclick="sendComment()" class="btn-main" style="margin:0; width:auto; height:40px;">Gönder</button></div></div>
+                <div style="margin-top:20px; text-align:left;">
+                    <h4 style="margin-bottom:10px;">Yorumlar <span id="comment-count-badge" style="font-size:12px; color:#888;">(0)</span></h4>
+                    <div id="comments-list">Yükleniyor...</div>
+                    <div style="display:flex; gap:10px; margin-top:10px;"><input type="text" id="comment-input" class="input-std" placeholder="Yorum..." style="margin:0; height:40px;"><button onclick="sendComment()" class="btn-main" style="margin:0; width:auto; height:40px;">Gönder</button></div>
+                </div>
                 <button onclick="adminDeleteBook()" style="color:var(--danger); background:none; border:none; margin-top:30px; display:${isAdmin?'block':'none'}">Kitabı Sil</button>
             `;
             document.getElementById('full-modal').style.display = 'block'; loadComments(book.id);
         }
 
-        window.toggleEditMode = () => {
-            const view = document.getElementById('modal-view-mode'); const edit = document.getElementById('modal-edit-mode');
-            if(view.classList.contains('hidden')) { view.classList.remove('hidden'); edit.classList.add('hidden'); document.getElementById('btn-edit-mode').innerText="Düzenle"; }
-            else { view.classList.add('hidden'); edit.classList.remove('hidden'); document.getElementById('btn-edit-mode').innerText="İptal"; 
-                document.getElementById('edit-title').value=currentBook.title; document.getElementById('edit-author').value=currentBook.author; document.getElementById('edit-cover').value=currentBook.cover||""; document.getElementById('edit-desc').value=currentBook.desc||"";
+        // --- COMMENTS LOGIC ---
+        function loadComments(bid) {
+            const l=document.getElementById('comments-list'); if(!l) return;
+            const q=query(collection(db,"comments"),where("bookId","==",bid)); 
+            onSnapshot(q,(s)=>{ 
+                l.innerHTML="";
+                document.getElementById('comment-count-badge').innerText = `(${s.size})`; // YORUM SAYACI GÜNCELLE
+                if(s.empty){ l.innerHTML="<div style='color:#666;font-size:12px;'>Yorum yok.</div>"; return;}
+                const comments = []; s.forEach(d => comments.push({id: d.id, ...d.data()})); comments.sort((a,b) => (b.date || 0) - (a.date || 0));
+                comments.forEach(c=>{
+                    const isOwner = (currentUser && c.uid === currentUser.uid); const canDelete = isOwner || isAdmin;
+                    const delBtn = canDelete ? `<div class="comment-del" onclick="deleteComment('${c.id}')">🗑️</div>` : '';
+                    const div = document.createElement('div'); div.className = "comment-row";
+                    div.innerHTML = `<div class="comment-user">${c.userName}</div><div class="comment-text">${c.text}</div>${delBtn}`;
+                    l.appendChild(div);
+                }); 
+            }); 
+        }
+        window.deleteComment = async (id) => { if(confirm("Yorumu silmek istiyor musunuz?")) { await deleteDoc(doc(db, "comments", id)); showToast("Yorum silindi"); } }
+        window.sendComment=async()=>{const t=document.getElementById('comment-input').value;if(!t)return;await addDoc(collection(db,"comments"),{bookId:currentBook.id,text:t,userName:currentUser.displayName||"Okur",uid:currentUser.uid,date:Date.now()});document.getElementById('comment-input').value="";}
+
+        // --- PROFILE LOGIC (YENİLENEN) ---
+        window.filterProfile = (type) => { 
+            const list = document.getElementById('profile-list'); list.innerHTML = ""; 
+            if (type === 'comments') {
+                if (myComments.length === 0) { list.innerHTML = "<div style='text-align:center;color:#666;padding:20px;'>Henüz yorum yapmadın.</div>"; return; }
+                myComments.forEach(c => {
+                    const book = globalBooks.find(b => b.id === c.bookId); if(!book) return;
+                    const date = new Date(c.date).toLocaleDateString();
+                    const div = document.createElement('div'); div.className = "my-comment-card"; div.onclick = () => openBookModal(book);
+                    const cover = (book.cover && book.cover.length > 5) ? `<img src="${book.cover}" class="my-comment-cover">` : `<div class="my-comment-cover" style="background:#333;display:flex;align-items:center;justify-content:center;">📚</div>`;
+                    div.innerHTML = `${cover}<div class="my-comment-info"><div class="my-comment-book">${book.title}</div><div class="my-comment-date">${date}</div><div class="my-comment-body">"${c.text}"</div></div>`;
+                    list.appendChild(div);
+                });
+                return;
             }
-        }
-        window.saveEditedBook = async () => {
-            if(!isAdmin)return;
-            const d={title:document.getElementById('edit-title').value, author:document.getElementById('edit-author').value, cover:document.getElementById('edit-cover').value, desc:document.getElementById('edit-desc').value};
-            await updateDoc(doc(db,"books",currentBook.id),d); showToast("Güncellendi ✅"); openBookModal({id:currentBook.id,...d});
+            const ids = Object.keys(userInteractions).filter(id => { if(type==='read') return userInteractions[id].status==='read'; if(type==='want') return userInteractions[id].status==='want'; if(type==='fav') return userInteractions[id].fav; }); 
+            if(ids.length === 0) list.innerHTML = "<div style='text-align:center;color:#666;padding:20px;'>Liste boş.</div>"; 
+            ids.forEach(id => { const b = globalBooks.find(x => x.id === id); if(b) list.appendChild(createBookCard(b)); }); 
         }
 
-        window.openAuthorModal = async (name, books) => {
-            currentAuthorName = name;
-            document.getElementById('modal-view-mode').classList.remove('hidden'); document.getElementById('modal-edit-mode').classList.add('hidden'); document.getElementById('modal-edit-auth-mode').classList.add('hidden'); document.getElementById('modal-req-mode').classList.add('hidden');
-            document.getElementById('btn-edit-mode').style.display = 'none'; document.getElementById('btn-edit-auth-mode').style.display = isAdmin ? 'block' : 'none'; document.getElementById('btn-edit-auth-mode').innerText = "Düzenle";
+        // --- EXCEL EXPORT (FIXED BLOB METHOD) ---
+        window.exportExcel = () => {
+            if(!isAdmin) return;
+            let csvContent = "\uFEFF"; // BOM
+            csvContent += "Kitap Adı;Yazar;Kapak Linki;Özet\n";
 
-            let bio="Yükleniyor...", img="";
-            const docRef=doc(db,"authors",name); const snap=await getDoc(docRef);
-            if(snap.exists()){ bio=snap.data().bio||"Bilgi yok."; img=snap.data().img||""; }
-            else { try{const r=await fetch(`https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`);const d=await r.json();bio=d.extract||"Bilgi yok.";if(d.thumbnail)img=d.thumbnail.source;await setDoc(docRef,{bio,img},{merge:true});}catch(e){bio="Bilgi yok.";} }
+            globalBooks.forEach(b => {
+                const title = `"${(b.title || "").replace(/"/g, '""')}"`;
+                const author = `"${(b.author || "").replace(/"/g, '""')}"`;
+                const cover = `"${(b.cover || "").replace(/"/g, '""')}"`;
+                const desc = `"${(b.desc || "").replace(/"/g, '""').replace(/\n/g, ' ')}"`;
+                csvContent += `${title};${author};${cover};${desc}\n`;
+            });
 
-            let html = `<div style="width:100px; height:100px; background:#333; border-radius:50%; margin:0 auto 15px; overflow:hidden;">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:cover;">`:'<div style="font-size:40px;line-height:100px;">👤</div>'}</div><h2 style="margin-bottom:10px;">${name}</h2><div style="text-align:left;background:rgba(255,255,255,0.05);padding:15px;border-radius:10px;font-size:14px;color:#ccc;max-height:200px;overflow-y:auto;margin-bottom:20px;">${bio}</div><h4 style="text-align:left;color:#999;margin-bottom:10px;">KİTAPLARI (${books.length})</h4>`;
-            books.forEach(b => html += `<div onclick="openBookModal({id:'${b.id}',title:'${b.title}',author:'${b.author}',cover:'${b.cover}',desc:'${b.desc}'})" style="padding:10px;background:var(--card-bg);margin-bottom:8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:10px;"><div style="width:30px;height:45px;border-radius:4px;overflow:hidden;flex-shrink:0;">${b.cover?`<img src="${b.cover}" style="width:100%;height:100%;object-fit:cover;">`:`<div style="width:100%;height:100%;background:#444;display:flex;align-items:center;justify-content:center;">📚</div>`}</div><div style="flex:1;">${b.title}</div><div style="color:#666;">›</div></div>`);
-            
-            document.getElementById('modal-view-mode').innerHTML = html;
-            document.getElementById('edit-auth-name').value = currentAuthorName; document.getElementById('edit-auth-bio').value = bio; document.getElementById('edit-auth-img').value = img;
-            document.getElementById('full-modal').style.display = 'block';
+            // BLOB KULLANIMI (Boyut Sınırını Aşmak İçin)
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "Kutuphane_Yedek.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
-
-        window.toggleAuthorEditMode = () => {
-            const view = document.getElementById('modal-view-mode'); const edit = document.getElementById('modal-edit-auth-mode');
-            if(view.classList.contains('hidden')) { view.classList.remove('hidden'); edit.classList.add('hidden'); document.getElementById('btn-edit-auth-mode').innerText="Düzenle"; } 
-            else { view.classList.add('hidden'); edit.classList.remove('hidden'); document.getElementById('btn-edit-auth-mode').innerText="İptal"; }
-        }
-
-        window.saveEditedAuthor = async () => {
-            const newName = document.getElementById('edit-auth-name').value.trim(); const bio = document.getElementById('edit-auth-bio').value; const img = document.getElementById('edit-auth-img').value;
-            if(!newName) return showToast("İsim boş olamaz");
-            if(newName === currentAuthorName) { await setDoc(doc(db,"authors", currentAuthorName), { bio, img }, { merge: true }); showToast("Yazar Güncellendi ✅"); } 
-            else { showToast("Yazar taşınıyor... ⏳"); const batch = writeBatch(db); batch.set(doc(db, "authors", newName), { bio, img }); const q = query(collection(db, "books"), where("author", "==", currentAuthorName)); const snap = await getDocs(q); snap.forEach(d => { batch.update(doc(db, "books", d.id), { author: newName }); }); batch.delete(doc(db, "authors", currentAuthorName)); await batch.commit(); showToast(`Güncellendi ✅`); currentAuthorName = newName; }
-            closeFullModal();
-        }
-
-        window.closeFullModal = () => document.getElementById('full-modal').style.display = 'none';
-        window.findDuplicates=()=>{if(!isAdmin)return;const groups={};globalBooks.forEach(b=>{const k=cleanText(b.title)+"_"+cleanText(b.author);if(!groups[k])groups[k]=[];groups[k].push(b)});const dups=Object.values(groups).filter(g=>g.length>1);if(dups.length===0)return showToast("Temiz");alert(dups.length+" Mükerrer bulundu. Silmek için v8 kullanın.");} // Simplified
 
         // --- COMMON ---
-        function loadComments(bid) { const l=document.getElementById('comments-list'); l.innerHTML="..."; const q=query(collection(db,"comments"),where("bookId","==",bid),orderBy("date","desc")); onSnapshot(q,(s)=>{ l.innerHTML="";if(s.empty){l.innerHTML="<div style='color:#666;font-size:12px;'>Yorum yok.</div>";return;}s.forEach(d=>{const c=d.data();l.innerHTML+=`<div style="border-bottom:1px solid #333;padding:8px 0;text-align:left;"><div style="color:var(--accent);font-size:12px;font-weight:bold;">${c.userName}</div><div style="font-size:13px;color:#ddd;">${c.text}</div></div>`;}); }); }
-        window.sendComment=async()=>{const t=document.getElementById('comment-input').value;if(!t)return;await addDoc(collection(db,"comments"),{bookId:currentBook.id,text:t,userName:currentUser.displayName||"Okur",uid:currentUser.uid,date:Date.now()});document.getElementById('comment-input').value="";}
+        window.toggleEditMode = () => { const view = document.getElementById('modal-view-mode'); const edit = document.getElementById('modal-edit-mode'); if(view.classList.contains('hidden')) { view.classList.remove('hidden'); edit.classList.add('hidden'); document.getElementById('btn-edit-mode').innerText="Düzenle"; } else { view.classList.add('hidden'); edit.classList.remove('hidden'); document.getElementById('btn-edit-mode').innerText="İptal"; document.getElementById('edit-title').value=currentBook.title; document.getElementById('edit-author').value=currentBook.author; document.getElementById('edit-cover').value=currentBook.cover||""; document.getElementById('edit-desc').value=currentBook.desc||""; } }
+        window.saveEditedBook = async () => { if(!isAdmin)return; const d={title:document.getElementById('edit-title').value, author:document.getElementById('edit-author').value, cover:document.getElementById('edit-cover').value, desc:document.getElementById('edit-desc').value}; await updateDoc(doc(db,"books",currentBook.id),d); showToast("Güncellendi ✅"); openBookModal({id:currentBook.id,...d}); }
+        window.viewOtherProfile = async (uid, userData) => { if(uid === currentUser.uid) { switchTab('profile'); return; } if(userData.isPrivate && !isAdmin) return showToast("Bu profil gizli 🔒"); document.getElementById('modal-view-mode').innerHTML = "<div style='padding:20px;'>Yükleniyor...</div>"; document.getElementById('full-modal').style.display = 'block'; document.getElementById('modal-title').innerText = "Kullanıcı Profili"; document.getElementById('modal-edit-mode').classList.add('hidden'); document.getElementById('modal-edit-auth-mode').classList.add('hidden'); document.getElementById('modal-req-mode').classList.add('hidden'); const q = query(collection(db, "interactions"), where("uid", "==", uid)); const snap = await getDocs(q); let userBooks = []; snap.forEach(d => { const b = globalBooks.find(x => x.id === d.data().bookId); if(b) userBooks.push(b); }); let html = `<div style="text-align:center; margin-bottom:20px;"><div style="font-size:40px;">👤</div><h3>${userData.displayName || userData.email}</h3><p style="color:#888;">${userBooks.length} Kitaplık Etkileşimi</p></div><div style="text-align:left;">`; if(userBooks.length === 0) html += "<p style='text-align:center; color:#666;'>Henüz kitap yok.</p>"; userBooks.forEach(b => { html += `<div style="padding:10px; border-bottom:1px solid #333; display:flex; gap:10px; align-items:center;"><img src="${b.cover||''}" style="width:30px; height:45px; object-fit:cover; border-radius:4px;"><div>${b.title}</div></div>`; }); html += "</div>"; document.getElementById('modal-view-mode').innerHTML = html; }
+        window.toggleUserRole = async (uid, currentRole) => { if(!isAdmin) return; const newRole = currentRole === 'admin' ? 'user' : 'admin'; if(confirm(`Yetkiyi değiştirmek istiyor musun?`)) await updateDoc(doc(db, "users", uid), { role: newRole }); }
+        window.deleteUser = async (uid) => { if(!isAdmin) return; if(confirm("Kullanıcıyı silmek istediğine emin misin?")) await deleteDoc(doc(db, "users", uid)); }
+        window.openRequestModal = () => { document.getElementById('modal-view-mode').classList.add('hidden'); document.getElementById('modal-edit-mode').classList.add('hidden'); document.getElementById('modal-edit-auth-mode').classList.add('hidden'); document.getElementById('modal-req-mode').classList.remove('hidden'); document.getElementById('full-modal').style.display = 'block'; document.getElementById('modal-title').innerText = "İstek Gönder"; document.getElementById('btn-edit-mode').style.display='none'; document.getElementById('btn-edit-auth-mode').style.display='none'; }
+        window.sendRequest = async () => { const txt = document.getElementById('req-text').value; if(!txt) return; await addDoc(collection(db, "messages"), { uid: currentUser.uid, email: currentUser.email, text: txt, date: Date.now() }); showToast("Mesaj gönderildi 📨"); closeFullModal(); document.getElementById('req-text').value = ""; }
+        window.viewMessages = async () => { if(!isAdmin) return; document.getElementById('modal-view-mode').classList.remove('hidden'); document.getElementById('modal-edit-mode').classList.add('hidden'); document.getElementById('modal-req-mode').classList.add('hidden'); document.getElementById('full-modal').style.display = 'block'; document.getElementById('modal-title').innerText = "Gelen Mesajlar"; const listDiv = document.getElementById('modal-view-mode'); listDiv.innerHTML = "Yükleniyor..."; const q = query(collection(db, "messages"), orderBy("date", "desc")); const snap = await getDocs(q); if(snap.empty) { listDiv.innerHTML = "Mesaj yok."; return; } let html = ""; snap.forEach(d => { const m = d.data(); const date = new Date(m.date).toLocaleDateString(); html += `<div class="msg-item"><div class="msg-header"><span>${m.email}</span><span>${date}</span></div><div>${m.text}</div></div>`; }); listDiv.innerHTML = html; }
+        function renderAuthors() { const grid = document.getElementById('authors-grid'); grid.innerHTML = ""; const groups = {}; globalBooks.forEach(b => { if(!groups[b.author])groups[b.author]=[]; groups[b.author].push(b); }); document.getElementById('count-authors').innerText = `Toplam: ${Object.keys(groups).length} Yazar`; Object.keys(groups).sort().forEach(auth => { const div = document.createElement('div'); div.className = "author-card"; div.onclick = () => openAuthorModal(auth, groups[auth]); div.innerHTML = `<div class="author-img-box" id="thumb-auth-${auth.replace(/\W/g,'')}">👤</div><div style="font-weight:600;font-size:15px;">${auth}</div><div style="font-size:12px;color:#999;">${groups[auth].length} Kitap</div>`; grid.appendChild(div); loadAuthorImage(auth, `thumb-auth-${auth.replace(/\W/g,'')}`); }); }
+        async function loadAuthorImage(name, elId) { const el=document.getElementById(elId); if(!el)return; try { const snap=await getDoc(doc(db,"authors",name)); if(snap.exists()&&snap.data().img){el.innerHTML=`<img src="${snap.data().img}" style="width:100%;height:100%;object-fit:cover;">`; return;} } catch(e){} try { const r=await fetch(`https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`); const d=await r.json(); if(d.thumbnail){ el.innerHTML=`<img src="${d.thumbnail.source}" style="width:100%;height:100%;object-fit:cover;">`; await setDoc(doc(db,"authors",name),{img:d.thumbnail.source},{merge:true}); } } catch(e){} }
+        window.openAuthorModal = async (name, books) => { currentAuthorName = name; document.getElementById('modal-view-mode').classList.remove('hidden'); document.getElementById('modal-edit-mode').classList.add('hidden'); document.getElementById('modal-edit-auth-mode').classList.add('hidden'); document.getElementById('modal-req-mode').classList.add('hidden'); document.getElementById('btn-edit-mode').style.display = 'none'; document.getElementById('btn-edit-auth-mode').style.display = isAdmin ? 'block' : 'none'; document.getElementById('btn-edit-auth-mode').innerText = "Düzenle"; let bio="Yükleniyor...", img=""; const docRef=doc(db,"authors",name); const snap=await getDoc(docRef); if(snap.exists()){ bio=snap.data().bio||"Bilgi yok."; img=snap.data().img||""; } else { try{const r=await fetch(`https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`);const d=await r.json();bio=d.extract||"Bilgi yok.";if(d.thumbnail)img=d.thumbnail.source;await setDoc(docRef,{bio,img},{merge:true});}catch(e){bio="Bilgi yok.";} } let html = `<div style="width:100px; height:100px; background:#333; border-radius:50%; margin:0 auto 15px; overflow:hidden;">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:cover;">`:'<div style="font-size:40px;line-height:100px;">👤</div>'}</div><h2 style="margin-bottom:10px;">${name}</h2><div style="text-align:left;background:rgba(255,255,255,0.05);padding:15px;border-radius:10px;font-size:14px;color:#ccc;max-height:200px;overflow-y:auto;margin-bottom:20px;">${bio}</div><h4 style="text-align:left;color:#999;margin-bottom:10px;">KİTAPLARI (${books.length})</h4>`; books.forEach(b => html += `<div onclick="openBookModal({id:'${b.id}',title:'${b.title}',author:'${b.author}',cover:'${b.cover}',desc:'${b.desc}'})" style="padding:10px;background:var(--card-bg);margin-bottom:8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:10px;"><div style="width:30px;height:45px;border-radius:4px;overflow:hidden;flex-shrink:0;">${b.cover?`<img src="${b.cover}" style="width:100%;height:100%;object-fit:cover;">`:`<div style="width:100%;height:100%;background:#444;display:flex;align-items:center;justify-content:center;">📚</div>`}</div><div style="flex:1;">${b.title}</div><div style="color:#666;">›</div></div>`); document.getElementById('modal-view-mode').innerHTML = html; document.getElementById('edit-auth-name').value = currentAuthorName; document.getElementById('edit-auth-bio').value = bio; document.getElementById('edit-auth-img').value = img; document.getElementById('full-modal').style.display = 'block'; }
+        window.toggleAuthorEditMode = () => { const view = document.getElementById('modal-view-mode'); const edit = document.getElementById('modal-edit-auth-mode'); if(view.classList.contains('hidden')) { view.classList.remove('hidden'); edit.classList.add('hidden'); document.getElementById('btn-edit-auth-mode').innerText="Düzenle"; } else { view.classList.add('hidden'); edit.classList.remove('hidden'); document.getElementById('btn-edit-auth-mode').innerText="İptal"; } }
+        window.saveEditedAuthor = async () => { const newName = document.getElementById('edit-auth-name').value.trim(); const bio = document.getElementById('edit-auth-bio').value; const img = document.getElementById('edit-auth-img').value; if(!newName) return showToast("İsim boş olamaz"); if(newName === currentAuthorName) { await setDoc(doc(db,"authors", currentAuthorName), { bio, img }, { merge: true }); showToast("Yazar Güncellendi ✅"); } else { showToast("Yazar taşınıyor... ⏳"); const batch = writeBatch(db); batch.set(doc(db, "authors", newName), { bio, img }); const q = query(collection(db, "books"), where("author", "==", currentAuthorName)); const snap = await getDocs(q); snap.forEach(d => { batch.update(doc(db, "books", d.id), { author: newName }); }); batch.delete(doc(db, "authors", currentAuthorName)); await batch.commit(); showToast(`Güncellendi ✅`); currentAuthorName = newName; } closeFullModal(); }
+        window.closeFullModal = () => document.getElementById('full-modal').style.display = 'none';
+        window.findDuplicates=()=>{if(!isAdmin)return;const groups={};globalBooks.forEach(b=>{const k=cleanText(b.title)+"_"+cleanText(b.author);if(!groups[k])groups[k]=[];groups[k].push(b)});const dups=Object.values(groups).filter(g=>g.length>1);if(dups.length===0)return showToast("Temiz");alert(dups.length+" Mükerrer bulundu. Silmek için v8 kullanın.");}
         window.shareBook=()=>{if(navigator.share)navigator.share({title:currentBook.title,text:`İncele: ${currentBook.title}`});else showToast("Kopyalandı");}
-        window.filterProfile = (type) => { const list = document.getElementById('profile-list'); list.innerHTML = ""; const ids = Object.keys(userInteractions).filter(id => { if(type==='read') return userInteractions[id].status==='read'; if(type==='want') return userInteractions[id].status==='want'; if(type==='fav') return userInteractions[id].fav; }); if(ids.length === 0) list.innerHTML = "<div style='text-align:center;color:#666;padding:20px;'>Liste boş.</div>"; ids.forEach(id => { const b = globalBooks.find(x => x.id === id); if(b) list.appendChild(createBookCard(b)); }); }
         function updateProfileStats() { const validIds = globalBooks.map(b => b.id); const v = Object.values(userInteractions).filter(i => validIds.includes(i.bookId)); document.getElementById('stat-read').innerText = v.filter(i=>i.status==='read').length; document.getElementById('stat-want').innerText = v.filter(i=>i.status==='want').length; document.getElementById('stat-fav').innerText = v.filter(i=>i.fav).length; }
         
         async function fetchFromGoogle(q) { try{const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);const d=await r.json();return (d.items&&d.items.length>0)?d.items[0].volumeInfo:null;}catch(e){return null;} }
@@ -644,9 +511,7 @@
         window.adminAddBook=async()=>{const t=document.getElementById('add-title').value;const a=document.getElementById('add-author').value;let c=document.getElementById('add-cover').value;const d=document.getElementById('add-desc').value; if(!t||!a)return showToast("Eksik bilgi!"); const exists = globalBooks.some(b => cleanText(b.title) === cleanText(t) && cleanText(b.author) === cleanText(a)); if(exists) return showToast("Bu kitap zaten var! 🛑"); if(!c){showToast("Kapak aranıyor...");const info=await fetchFromGoogle(`intitle:${t}+inauthor:${a}`);if(info&&info.imageLinks)c=info.imageLinks.thumbnail.replace('http:','https:');} await addDoc(collection(db,"books"),{title:t,author:a,cover:c,desc:d}); showToast("Eklendi ✅"); switchTab('library'); document.getElementById('add-title').value="";document.getElementById('add-author').value="";document.getElementById('add-cover').value="";document.getElementById('add-desc').value=""; }
         window.adminDeleteBook=async()=>{if(confirm("Silmek istiyor musun?")){await deleteDoc(doc(db,"books",currentBook.id));closeFullModal();showToast("Silindi");}}
         window.autoFixMissing=async()=>{if(!isAdmin)return; const missing=globalBooks.filter(b=>!b.cover||!b.desc||b.desc.length<5);if(missing.length===0)return showToast("Her şey tam! 👌"); showToast(`${missing.length} kitap taranıyor...`);for(const b of missing){const info=await fetchFromGoogle(`intitle:${b.title}+inauthor:${b.author}`);if(info){const u={};if(!b.cover&&info.imageLinks)u.cover=info.imageLinks.thumbnail.replace('http:','https:');if((!b.desc||b.desc.length<5)&&info.description)u.desc=info.description;if(Object.keys(u).length>0)await updateDoc(doc(db,"books",b.id),u);}} showToast("Güncelleme Bitti ✅");}
-        window.exportData=()=>{if(!isAdmin)return;const s="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(globalBooks));const a=document.createElement('a');a.href=s;a.download="kutuphane.json";document.body.appendChild(a);a.click();a.remove();}
-        window.importData=(input)=>{if(!isAdmin)return; const file=input.files[0]; if(!file)return; const reader=new FileReader(); reader.onload=async function(e){try{let count=0; let skipped=0; const processBook = async (t, a, c, d) => { if(globalBooks.some(b => cleanText(b.title)===cleanText(t) && cleanText(b.author)===cleanText(a))) { skipped++; return; } await addDoc(collection(db,"books"),{title:t,author:a,cover:c,desc:d}); count++; }; if(file.name.endsWith('.csv')){ const lines=e.target.result.split('\n'); for(let i=1;i<lines.length;i++){const cols=lines[i].split(','); if(cols.length>=2){ const t=cols[0].trim(); const a=cols[1].trim(); const cov=cols[2]?cols[2].trim():""; const desc=cols[3]?cols[3].trim():""; if(t&&a) await processBook(t,a,cov,desc); }}} else { const d=JSON.parse(e.target.result); for(const b of d){ await processBook(b.title, b.author, b.cover||"", b.desc||""); } } showToast(`${count} eklendi, ${skipped} pas geçildi`);}catch(err){showToast("Dosya hatası");}}; reader.readAsText(file); input.value='';}
-
+        window.importData=(input)=>{if(!isAdmin)return; const file=input.files[0]; if(!file)return; const reader=new FileReader(); reader.onload=async function(e){try{let count=0; let skipped=0; const processBook = async (t, a, c, d) => { if(globalBooks.some(b => cleanText(b.title)===cleanText(t) && cleanText(b.author)===cleanText(a))) { skipped++; return; } await addDoc(collection(db,"books"),{title:t,author:a,cover:c,desc:d}); count++; }; if(file.name.endsWith('.csv')){ const lines=e.target.result.split('\n'); for(let i=1;i<lines.length;i++){const cols=lines[i].split(';'); if(cols.length>=2){ const t=cols[0].trim(); const a=cols[1].trim(); const cov=cols[2]?cols[2].trim():""; const desc=cols[3]?cols[3].trim():""; if(t&&a) await processBook(t,a,cov,desc); }}} else { const d=JSON.parse(e.target.result); for(const b of d){ await processBook(b.title, b.author, b.cover||"", b.desc||""); } } showToast(`${count} eklendi, ${skipped} pas geçildi`);}catch(err){showToast("Dosya hatası");}}; reader.readAsText(file); input.value='';}
         window.switchTab=(t)=>{document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+t).classList.add('active');document.querySelectorAll('.content-area:not(#page-auth)').forEach(e=>e.classList.add('hidden'));document.getElementById('page-'+t).classList.remove('hidden');if(t==='profile')filterProfile('read');}
         window.showToast=(m)=>{const t=document.getElementById('toast-container');const e=document.createElement('div');e.className='toast';e.innerText=m;t.appendChild(e);setTimeout(()=>e.classList.add('show'),50);setTimeout(()=>{e.classList.remove('show');setTimeout(()=>e.remove(),300)},3000);}
     </script>
