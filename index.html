@@ -319,7 +319,7 @@
             <div id="admin-badge" class="badge-dot"></div>
         </button>
     </div>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail, updatePassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -811,7 +811,68 @@
         }
 
         function updateProfileStats() { const validIds = globalBooks.map(b => b.id); const v = Object.values(userInteractions).filter(i => validIds.includes(i.bookId)); document.getElementById('stat-read').innerText = v.filter(i=>i.status==='read').length; document.getElementById('stat-want').innerText = v.filter(i=>i.status==='want').length; if(currentUser) { const addedCount = globalBooks.filter(b => b.addedBy === currentUser.uid).length; document.getElementById('stat-added').innerText = addedCount; } else { document.getElementById('stat-added').innerText = 0; } }
-    </script>
+   // --- VERİ DIŞA AKTAR (EXCEL) ---
+window.exportExcel = () => {
+    if (globalBooks.length === 0) return showToast("Dışa aktarılacak kitap yok.");
+    
+    // Veriyi Excel formatına uygun bir diziye dönüştür
+    const data = globalBooks.map(b => ({
+        "Kitap Adı": b.title,
+        "Yazar": b.author,
+        "Kapak Linki": b.cover || "",
+        "Özet": b.desc || "",
+        "Durum": b.status || "active",
+        "Ekleyen": b.addedByName || "Sistem"
+    }));
+
+    // SheetJS kullanarak dosya oluştur
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Kitaplar");
+
+    // Dosyayı indir
+    XLSX.writeFile(workbook, "Kutuphanem_Veri_Yedek.xlsx");
+    showToast("Excel dosyası indirildi 📥");
+};
+
+// --- VERİ İÇE AKTAR (JSON/CSV/XLSX) ---
+window.importData = (input) => {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            if (confirm(`${jsonData.length} adet kitap içe aktarılacak. Onaylıyor musunuz?`)) {
+                showToast("Yükleme başladı...");
+                
+                for (const item of jsonData) {
+                    await addDoc(collection(db, "books"), {
+                        title: item["Kitap Adı"] || item.title,
+                        author: item["Yazar"] || item.author,
+                        cover: item["Kapak Linki"] || item.cover || "",
+                        desc: item["Özet"] || item.desc || "",
+                        status: 'active',
+                        ownerType: 'library',
+                        addedBy: currentUser.uid,
+                        addedByName: currentUser.displayName + " (Toplu Yükleme)"
+                    });
+                }
+                showToast("Tüm kitaplar başarıyla eklendi! 🎉");
+            }
+        } catch (err) {
+            console.error(err);
+            showToast("Dosya okuma hatası! ❌");
+        }
+    };
+    reader.readAsArrayBuffer(file);
+};
+ </script>
 </body>
 </html>
-
