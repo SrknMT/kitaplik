@@ -49,7 +49,7 @@
         .btn-small.active-filter[data-type="added"] { background: var(--user-book); border-color: var(--user-book); color: black; }
         .btn-icon { width: 50px; height: 50px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-dim); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px;}
 
-        /* Kitap Kartı */
+        /* Kitap Kartı & Rozetler */
         .book-item { display: flex; align-items: center; padding: 12px; margin-bottom: 10px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); cursor: pointer; position: relative; transition: all 0.3s ease; }
         .book-item.just-added { animation: highlightNew 2s ease-out; }
         @keyframes highlightNew { from { background: var(--accent); } to { background: var(--card-bg); } }
@@ -57,10 +57,11 @@
         .book-icon-box img { width: 100%; height: 100%; object-fit: cover; }
         .default-cover { width: 100%; height: 100%; background: linear-gradient(135deg, #2c2c2e 0%, #1a1a1a 100%); display: flex; align-items: center; justify-content: center; font-size: 24px; color: #fff; }
         .book-details { flex: 1; overflow: hidden; }
-        .book-title { font-size: 15px; font-weight: 600; color: white; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px;}
-        .book-author { font-size: 13px; color: var(--text-dim); }
+        .book-title { font-size: 15px; font-weight: 600; color: white; margin-bottom: 3px; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
+        .book-author { font-size: 13px; color: var(--text-dim); margin-top:2px; }
         
-        .series-badge { font-size: 9px; padding: 2px 5px; border-radius: 4px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid rgba(255,255,255,0.2);}
+        .series-badge { font-size: 9px; padding: 2px 5px; border-radius: 4px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid rgba(255,255,255,0.2); margin-right:5px; }
+        .publisher-badge { font-size: 9px; padding: 2px 5px; border-radius: 4px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid var(--accent); color: var(--accent); background: rgba(10,132,255,0.1); margin-right:5px; }
         
         .status-badge { position:absolute; bottom:12px; right:12px; width:10px; height:10px; border-radius:50%; display:none; }
         .status-badge.show { display:block; }
@@ -153,13 +154,19 @@
     <div class="header"><h1>Kütüphanem</h1></div>
 
     <div id="page-library" class="content-area">
-        <div style="margin-bottom:20px; display:flex; gap:10px;">
+        <div style="margin-bottom:10px; display:flex; gap:10px;">
             <input type="text" id="search-input" class="input-std" style="margin:0;" placeholder="Kitap veya yazar ara..." onkeyup="debouncedApplyFilters()">
             <button class="btn-icon" onclick="toggleSort()" id="btn-sort" title="Sırala">⇅</button>
         </div>
         
-        <div id="category-filters-container" style="display:flex; flex-wrap: wrap; justify-content: center; gap:8px; margin-bottom: 15px;">
-    </div>
+        <div style="display:flex; gap:10px; margin-bottom: 15px;">
+            <select id="filter-publisher" class="input-std" style="height:40px; font-size:13px; margin:0; padding:0 10px; flex:1;" onchange="applyFilters()">
+                <option value="all">🏢 Tüm Yayınevleri</option>
+            </select>
+            <select id="filter-series" class="input-std" style="height:40px; font-size:13px; margin:0; padding:0 10px; flex:1;" onchange="applyFilters()">
+                <option value="all">📚 Tüm Seriler</option>
+            </select>
+        </div>
 
         <div id="count-books" class="count-header">Yükleniyor...</div>
         <div id="book-list"></div>
@@ -238,12 +245,13 @@
     <div id="page-add" class="content-area hidden">
         <h2 style="margin-bottom:20px;">Kitap Ekle</h2>
         <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <input type="number" id="isbn-input" class="input-std" style="margin:0;" placeholder="Barkod (ISBN)" inputmode="numeric" pattern="[0-9]*">
-            <button onclick="fetchByISBN()" class="btn-main" style="width:60px; margin:0;">🔍</button>
+            <input type="number" id="add-isbn" class="input-std" style="margin:0;" placeholder="Barkod (ISBN)" inputmode="numeric" pattern="[0-9]*">
+            <button onclick="fetchByISBN()" class="btn-main" style="width:60px; margin:0;" title="İnternette Ara">🔍</button>
         </div>
         <input type="text" id="add-title" class="input-std" placeholder="Kitap Adı">
         <input type="text" id="add-author" class="input-std" placeholder="Yazar Adı">
         
+        <select id="add-publisher" class="input-std" style="color: #ccc;"></select>
         <select id="add-series" class="input-std" style="color: #ccc;"></select>
 
         <div style="display:flex; gap:10px; margin-bottom:15px;">
@@ -256,18 +264,42 @@
 
         <div id="admin-tools-area" class="hidden" style="border-top:1px solid var(--border-color); padding-top:20px; margin-top:30px;">
             <div style="font-size:12px;color:var(--text-dim);text-transform:uppercase;margin-bottom:15px;">YÖNETİCİ ARAÇLARI</div>
+            
+            <div id="publisher-manager-area" style="margin-bottom:15px; padding:15px; background:rgba(0,0,0,0.3); border-radius:10px; border:1px dashed #444;">
+                <h4 style="margin-top:0; color:var(--accent); font-size:14px;">🏢 Yayınevi Yönetimi</h4>
+                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                    <input type="text" id="new-publisher-name" class="input-std" style="height:35px; margin:0; font-size:13px;" placeholder="Resmi Yayınevi Adı">
+                    <button id="btn-submit-publisher" onclick="submitPublisher()" class="btn-main" style="width:auto; height:35px; font-size:12px; padding:0 10px;">Ekle</button>
+                    <button id="btn-cancel-publisher" onclick="cancelEditPublisher()" class="btn-outline" style="width:auto; height:35px; font-size:12px; padding:0 10px; display:none;">İptal</button>
+                </div>
+                <div id="publisher-admin-list" style="display:flex; flex-direction:column; gap:5px; max-height:250px; overflow-y:auto;"></div>
+            </div>
+
+            <div id="series-manager-area" style="margin-bottom:20px; padding:15px; background:rgba(0,0,0,0.3); border-radius:10px; border:1px dashed #444;">
+                <h4 style="margin-top:0; color:var(--accent); font-size:14px;">📚 Seri / Kategori Yönetimi</h4>
+                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                    <input type="text" id="new-series-name" class="input-std" style="height:35px; margin:0; font-size:13px;" placeholder="Seri Adı">
+                    <input type="color" id="new-series-bg" title="Arka Plan Rengi" value="#5e5ce6" style="height:35px; width:40px; border:none; border-radius:5px; cursor:pointer; background:none; padding:0;">
+                    <input type="color" id="new-series-text" title="Yazı Rengi" value="#ffffff" style="height:35px; width:40px; border:none; border-radius:5px; cursor:pointer; background:none; padding:0;">
+                    <button id="btn-submit-series" onclick="submitSeries()" class="btn-main" style="width:auto; height:35px; font-size:12px; padding:0 10px;">Ekle</button>
+                    <button id="btn-cancel-series" onclick="cancelEditSeries()" class="btn-outline" style="width:auto; height:35px; font-size:12px; padding:0 10px; display:none;">İptal</button>
+                </div>
+                <div id="series-admin-list" style="display:flex; flex-direction:column; gap:5px; max-height:250px; overflow-y:auto;"></div>
+            </div>
+
             <div id="pending-container" style="margin-bottom:20px;">
                 <div style="font-size:13px; color:var(--library); margin-bottom:10px;">⏳ Onay Bekleyen Kitaplar</div>
                 <div id="pending-list" style="background:#111; padding:10px; border-radius:10px; min-height:50px;">
                     <div style="color:#666; font-size:12px; text-align:center;">Bekleyen yok.</div>
                 </div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                <button class="btn-small" onclick="viewMessages()">📩 Mesajlar</button>
-                <button class="btn-small" onclick="findDuplicates()">🧹 Mükerrerleri Bul</button>
-                <button class="btn-small" style="background:#2ecc71; border-color:#2ecc71;" onclick="exportExcel()">📤 Excel Olarak İndir</button>
-                <button class="btn-small" onclick="autoFixMissing()">⚡ Eksikleri Tara</button>
-                <button class="btn-small" onclick="document.getElementById('file-import').click()">📂 Excel'den Yükle</button>
+            
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <button class="btn-outline" onclick="findDuplicates()">🧹 Mükerrer Kayıtları Bul</button>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-main" style="background:#2ecc71; flex:1;" onclick="exportExcel()">📤 Excel (Dışa Aktar)</button>
+                    <button class="btn-main" style="background:#3498db; flex:1;" onclick="document.getElementById('file-import').click()">📂 Excel (İçe Aktar)</button>
+                </div>
             </div>
             <input type="file" id="file-import" style="display:none;" onchange="importData(this)" accept=".csv,.json,.xlsx">
         </div>
@@ -295,8 +327,13 @@
             
             <div id="modal-edit-mode" class="hidden" style="text-align:left;">
                 <div style="background:var(--library); color:black; padding:10px; border-radius:8px; margin-bottom:15px; font-size:12px; font-weight:bold; display:none;" id="edit-mode-warning">⚠️ Bu kitap henüz onaylanmadı. Düzenleyip onaylayabilirsiniz.</div>
+                
+                <label style="font-size:12px;color:#666;">ISBN (Barkod)</label><input type="text" id="edit-isbn" class="input-std" inputmode="numeric">
                 <label style="font-size:12px;color:#666;">Kitap Adı</label><input type="text" id="edit-title" class="input-std">
                 <label style="font-size:12px;color:#666;">Yazar</label><input type="text" id="edit-author" class="input-std">
+                
+                <label style="font-size:12px;color:#666;">Yayınevi</label>
+                <select id="edit-publisher" class="input-std" style="color: #ccc;"></select>
                 
                 <label style="font-size:12px;color:#666;">Seri / Kategori</label>
                 <select id="edit-series" class="input-std" style="color: #ccc;"></select>
@@ -351,7 +388,6 @@
         const db = getFirestore(app);
         const SUPER_ADMIN_EMAIL = "mete.serkanali@gmail.com";
 
-        // GLOBAL DEĞİŞKENLER
         let currentUser = null;
         let isAdmin = false;
         let isLoginMode = true;
@@ -364,40 +400,19 @@
         let currentBook = null;
         let currentAuthorName = null; 
         let sortAsc = true; 
-        let activeCategoryFilter = 'all'; 
-
-        // --- MERKEZİ SERİ/KATEGORİ SİSTEMİ ---
-        // Yeni kategori eklemek istersen sadece bu listeye eklemen yeterlidir.
-        const SERIES_CONFIG = [
-            { id: 'none', label: 'Kategori / Seri Yok', keyword: '', bgColor: 'transparent', textColor: '#fff' },
-            { id: 'modern', label: 'İş Bankası Modern Klasikler', keyword: 'modern klasik', bgColor: '#e5e5ea', textColor: '#000' },
-            { id: 'dark', label: 'İthaki Karanlık Kitaplık', keyword: 'karanlık kitaplık', bgColor: '#8e8e93', textColor: '#fff' },
-            { id: 'scifi', label: 'İthaki Bilimkurgu Klasikleri', keyword: 'bilimkurgu', bgColor: '#5e5ce6', textColor: '#fff' }
-        ];
-
-        function initSeries() {
-            const filterContainer = document.getElementById('category-filters-container');
-            const addSelect = document.getElementById('add-series');
-            const editSelect = document.getElementById('edit-series');
-            
-            filterContainer.innerHTML = `<button class="btn-small active-filter" id="cat-all" onclick="filterCategory('all')">Tümü</button>`;
-            addSelect.innerHTML = "";
-            editSelect.innerHTML = "";
-
-            SERIES_CONFIG.forEach(series => {
-                if (series.id !== 'none') {
-                    filterContainer.innerHTML += `<button class="btn-small" id="cat-${series.id}" onclick="filterCategory('${series.id}')">${series.label}</button>`;
-                }
-                const optionHTML = `<option value="${series.id}">${series.label}</option>`;
-                addSelect.innerHTML += optionHTML;
-                editSelect.innerHTML += optionHTML;
-            });
-        }
         
-        // Uygulama başlarken menüleri doldur
-        initSeries();
+        let dynamicSeries = []; 
+        let dynamicPublishers = [];
 
-        // Performans için Debounce Fonksiyonu
+        // LAZY LOAD DEĞİŞKENLERİ
+        let visibleCount = 50;
+        let currentFilteredList = [];
+
+        // EDİTLEME DEĞİŞKENLERİ
+        let editingSeriesId = null;
+        let editingPublisherId = null;
+        let editingPublisherOldName = null;
+
         function debounce(func, timeout = 300) {
             let timer;
             return (...args) => {
@@ -406,7 +421,21 @@
             };
         }
 
-        // VERİTABANI DİNLEYİCİLERİ
+        // --- VERİTABANI DİNLEYİCİLERİ ---
+        
+        onSnapshot(collection(db, "publishers"), (snap) => {
+            dynamicPublishers = [];
+            snap.forEach(d => { dynamicPublishers.push({id: d.id, ...d.data()}); });
+            dynamicPublishers.sort((a, b) => a.name.localeCompare(b.name));
+            updatePublisherUI();
+        });
+
+        onSnapshot(collection(db, "series"), (snap) => {
+            dynamicSeries = [];
+            snap.forEach(d => { dynamicSeries.push({id: d.id, ...d.data()}); });
+            updateSeriesUI();
+        });
+
         onSnapshot(collection(db, "books"), (snap) => { 
             rawSnapshots = [];
             snap.forEach(d => { rawSnapshots.push({id: d.id, ...d.data()}); });
@@ -419,12 +448,210 @@
             renderAuthors(); 
         });
 
+        function updatePublisherUI() {
+            const addSel = document.getElementById('add-publisher');
+            const editSel = document.getElementById('edit-publisher');
+            const filterSel = document.getElementById('filter-publisher');
+            
+            let currentFilterVal = filterSel ? filterSel.value : 'all';
+
+            let opts = `<option value="none">Yayınevi Seçilmedi</option>`;
+            let filterOpts = `<option value="all">🏢 Tüm Yayınevleri</option><option value="none">Yayınevi Olmayanlar</option>`;
+            
+            dynamicPublishers.forEach(p => {
+                const opt = `<option value="${p.name}">${p.name}</option>`;
+                opts += opt; filterOpts += opt;
+            });
+            
+            if(addSel) addSel.innerHTML = opts;
+            if(editSel) editSel.innerHTML = opts;
+            if(filterSel) {
+                filterSel.innerHTML = filterOpts;
+                if(filterSel.querySelector(`option[value="${currentFilterVal}"]`)) filterSel.value = currentFilterVal;
+            }
+
+            const adminList = document.getElementById('publisher-admin-list');
+            if(adminList) {
+                adminList.innerHTML = "";
+                if(dynamicPublishers.length === 0) adminList.innerHTML = `<div style="color:#666; font-size:12px;">Henüz yayınevi eklenmemiş.</div>`;
+                dynamicPublishers.forEach(p => {
+                    const safeName = p.name.replace(/'/g, "\\'");
+                    adminList.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:8px; border-radius:6px;">
+                        <span style="font-size:13px; color:white; font-weight:600;">${p.name}</span>
+                        <div>
+                            <button onclick="editPublisher('${p.id}', '${safeName}')" style="background:none; border:none; color:var(--accent); cursor:pointer; margin-right:5px;" title="Düzenle">✏️</button>
+                            <button onclick="deletePublisher('${p.id}')" style="background:none; border:none; color:var(--danger); cursor:pointer;" title="Sil">❌</button>
+                        </div>
+                    </div>`;
+                });
+            }
+            if(globalBooks.length > 0) applyFilters(); 
+        }
+
+        window.submitPublisher = async () => {
+            if(!isAdmin) return;
+            const name = document.getElementById('new-publisher-name').value.trim();
+            if(!name) return showToast("Lütfen yayınevi adı girin!");
+            
+            if (editingPublisherId) {
+                // Güncelleme Modu - Toplu Güncelleme (Batch Update)
+                if(dynamicPublishers.find(p => p.name.toLowerCase() === name.toLowerCase() && p.id !== editingPublisherId)) {
+                    return showToast("Bu yayınevi zaten var!");
+                }
+                showToast("Kitaplar güncelleniyor, lütfen bekleyin...");
+                
+                const batch = writeBatch(db);
+                // 1. Yayınevi kaydını güncelle
+                batch.update(doc(db, "publishers", editingPublisherId), { name: name });
+
+                // 2. Bu yayınevine ait tüm kitapları bul ve güncelle
+                const affectedBooks = globalBooks.filter(b => b.publisher === editingPublisherOldName);
+                affectedBooks.forEach(b => {
+                    batch.update(doc(db, "books", b.id), { publisher: name });
+                });
+                
+                await batch.commit();
+                showToast("Yayınevi ve kitaplar güncellendi! ✅");
+                cancelEditPublisher();
+            } else {
+                // Yeni Ekleme Modu
+                if(dynamicPublishers.find(p => p.name.toLowerCase() === name.toLowerCase())) {
+                    return showToast("Bu yayınevi zaten var!");
+                }
+                await addDoc(collection(db, "publishers"), { name: name });
+                document.getElementById('new-publisher-name').value = "";
+                showToast("Yayınevi Eklendi! ✅");
+            }
+        }
+
+        window.editPublisher = (id, name) => {
+            editingPublisherId = id;
+            editingPublisherOldName = name;
+            document.getElementById('new-publisher-name').value = name;
+            
+            document.getElementById('btn-submit-publisher').innerText = "Güncelle";
+            document.getElementById('btn-submit-publisher').style.background = "var(--success)";
+            document.getElementById('btn-cancel-publisher').style.display = "block";
+        }
+
+        window.cancelEditPublisher = () => {
+            editingPublisherId = null;
+            editingPublisherOldName = null;
+            document.getElementById('new-publisher-name').value = "";
+            
+            document.getElementById('btn-submit-publisher').innerText = "Ekle";
+            document.getElementById('btn-submit-publisher').style.background = "var(--accent)";
+            document.getElementById('btn-cancel-publisher').style.display = "none";
+        }
+
+        window.deletePublisher = async (id) => {
+            if(!isAdmin) return;
+            if(confirm("Silmek istediğinize emin misiniz?")) {
+                if(editingPublisherId === id) cancelEditPublisher();
+                await deleteDoc(doc(db, "publishers", id)); 
+                showToast("Yayınevi Silindi 🗑️");
+            }
+        }
+
+        function updateSeriesUI() {
+            const addSel = document.getElementById('add-series');
+            const editSel = document.getElementById('edit-series');
+            const filterSel = document.getElementById('filter-series');
+            
+            let currentFilterVal = filterSel ? filterSel.value : 'all';
+
+            let opts = `<option value="none">Seri Yok / Kategori Yok</option>`;
+            let filterOpts = `<option value="all">📚 Tüm Seriler</option><option value="none">Seri Olmayanlar</option>`;
+            
+            dynamicSeries.forEach(s => {
+                const opt = `<option value="${s.id}">${s.name}</option>`;
+                opts += opt; filterOpts += opt;
+            });
+            
+            if(addSel) addSel.innerHTML = opts;
+            if(editSel) editSel.innerHTML = opts;
+            if(filterSel) {
+                filterSel.innerHTML = filterOpts;
+                if(filterSel.querySelector(`option[value="${currentFilterVal}"]`)) filterSel.value = currentFilterVal;
+            }
+
+            const adminList = document.getElementById('series-admin-list');
+            if(adminList) {
+                adminList.innerHTML = "";
+                if(dynamicSeries.length === 0) adminList.innerHTML = `<div style="color:#666; font-size:12px;">Henüz seri eklenmemiş.</div>`;
+                dynamicSeries.forEach(s => {
+                    const safeName = s.name.replace(/'/g, "\\'");
+                    adminList.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:8px; border-radius:6px;">
+                        <span class="series-badge" style="background:${s.bgColor}; color:${s.textColor}; border:none;">${s.name}</span>
+                        <div>
+                            <button onclick="editSeries('${s.id}', '${safeName}', '${s.bgColor}', '${s.textColor}')" style="background:none; border:none; color:var(--accent); cursor:pointer; margin-right:5px;" title="Düzenle">✏️</button>
+                            <button onclick="deleteSeries('${s.id}')" style="background:none; border:none; color:var(--danger); cursor:pointer;" title="Sil">❌</button>
+                        </div>
+                    </div>`;
+                });
+            }
+            if(globalBooks.length > 0) applyFilters(); 
+        }
+
+        window.submitSeries = async () => {
+            if(!isAdmin) return;
+            const name = document.getElementById('new-series-name').value.trim();
+            const bg = document.getElementById('new-series-bg').value;
+            const text = document.getElementById('new-series-text').value;
+            if(!name) return showToast("Lütfen seri adı girin!");
+            
+            if (editingSeriesId) {
+                // Güncelleme Modu
+                await updateDoc(doc(db, "series", editingSeriesId), { name: name, bgColor: bg, textColor: text });
+                showToast("Seri Güncellendi! ✅");
+                cancelEditSeries(); // Formu sıfırla
+            } else {
+                // Yeni Ekleme Modu
+                await addDoc(collection(db, "series"), { name: name, bgColor: bg, textColor: text });
+                document.getElementById('new-series-name').value = "";
+                showToast("Yeni Seri Eklendi! ✅");
+            }
+        }
+
+        window.editSeries = (id, name, bg, text) => {
+            editingSeriesId = id;
+            document.getElementById('new-series-name').value = name;
+            document.getElementById('new-series-bg').value = bg;
+            document.getElementById('new-series-text').value = text;
+            
+            document.getElementById('btn-submit-series').innerText = "Güncelle";
+            document.getElementById('btn-submit-series').style.background = "var(--success)";
+            document.getElementById('btn-cancel-series').style.display = "block";
+        }
+
+        window.cancelEditSeries = () => {
+            editingSeriesId = null;
+            document.getElementById('new-series-name').value = "";
+            document.getElementById('new-series-bg').value = "#5e5ce6";
+            document.getElementById('new-series-text').value = "#ffffff";
+            
+            document.getElementById('btn-submit-series').innerText = "Ekle";
+            document.getElementById('btn-submit-series').style.background = "var(--accent)";
+            document.getElementById('btn-cancel-series').style.display = "none";
+        }
+
+        window.deleteSeries = async (id) => {
+            if(!isAdmin) return;
+            if(confirm("Silmek istediğinize emin misiniz?")) {
+                if(editingSeriesId === id) cancelEditSeries();
+                await deleteDoc(doc(db, "series", id)); 
+                showToast("Seri Silindi 🗑️");
+            }
+        }
+
         function processBooks() {
             globalBooks = [];
             pendingBooks = [];
+
             rawSnapshots.forEach(b => {
                 const isActive = b.status === 'active' || !b.status;
                 const isPending = b.status === 'pending';
+                
                 if (isActive) { globalBooks.push(b); } 
                 else if (isPending) {
                     pendingBooks.push(b);
@@ -434,6 +661,7 @@
                     }
                 }
             });
+            
             document.getElementById('count-books').innerText = `Toplam: ${globalBooks.length} Kitap`; 
             applyFilters(); renderAuthors(); 
             if(isAdmin) {
@@ -444,7 +672,6 @@
             }
         }
 
-        // KULLANICI İŞLEMLERİ (AUTH)
         window.handleAuth = async () => {
             const email = document.getElementById('auth-email').value;
             const pass = document.getElementById('auth-pass').value;
@@ -510,81 +737,120 @@
             }
         });
 
-        // KİTAP LİSTELEME VE FİLTRELEME
-        window.filterCategory = (cat) => {
-            activeCategoryFilter = cat;
-            document.querySelectorAll('#page-library .btn-small').forEach(btn => btn.classList.remove('active-filter'));
-            document.getElementById(`cat-${cat}`).classList.add('active-filter');
-            applyFilters();
-        }
-
+        // FİLTRELEME VE LAZY RENDER (TEMBEL YÜKLEME)
         window.applyFilters = () => { 
             const q = document.getElementById('search-input').value.toLowerCase(); 
-            let list = globalBooks.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)); 
+            const pubFilter = document.getElementById('filter-publisher') ? document.getElementById('filter-publisher').value : 'all';
+            const serFilter = document.getElementById('filter-series') ? document.getElementById('filter-series').value : 'all';
+
+            let list = globalBooks.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || (b.isbn && b.isbn.includes(q))); 
             
-            // Seçili kategori varsa filtrele
-            if (activeCategoryFilter !== 'all') {
-                list = list.filter(b => b.series === activeCategoryFilter);
+            if (pubFilter !== 'all') {
+                if (pubFilter === 'none') list = list.filter(b => !b.publisher || b.publisher === 'none');
+                else list = list.filter(b => b.publisher === pubFilter);
+            }
+            
+            if (serFilter !== 'all') {
+                if (serFilter === 'none') list = list.filter(b => !b.series || b.series === 'none');
+                else list = list.filter(b => b.series === serFilter);
             }
 
             list.sort((a,b) => { return sortAsc ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title); }); 
-            const container = document.getElementById('book-list'); 
-            container.innerHTML = ""; 
-            list.forEach(b => container.appendChild(createBookCard(b)));
-	    document.getElementById('count-books').innerText = `Toplam: ${list.length} Kitap`; 
+            
+            currentFilteredList = list;
+            visibleCount = 50; // Arama yapıldığında veya filtre değiştiğinde sayacı sıfırla
+            renderBookList();
+	        document.getElementById('count-books').innerText = `Toplam: ${list.length} Kitap`; 
         }
 
         window.debouncedApplyFilters = debounce(window.applyFilters, 300);
+
+        function renderBookList(append = false) {
+            const container = document.getElementById('book-list');
+            if(!append) {
+                container.innerHTML = "";
+                window.scrollTo(0, 0); // Sayfa başa dönsün
+            }
+            
+            const oldBtn = document.getElementById('load-more-btn');
+            if(oldBtn) oldBtn.remove();
+
+            const start = append ? visibleCount - 50 : 0;
+            const itemsToRender = currentFilteredList.slice(start, visibleCount);
+
+            const fragment = document.createDocumentFragment();
+            itemsToRender.forEach(b => fragment.appendChild(createBookCard(b)));
+            container.appendChild(fragment);
+
+            // Eğer hala gösterilecek kitap varsa "Daha Fazla Göster" butonu ekle
+            if (visibleCount < currentFilteredList.length) {
+                const loadMoreBtn = document.createElement('button');
+                loadMoreBtn.id = "load-more-btn";
+                loadMoreBtn.className = "btn-outline";
+                loadMoreBtn.style.marginTop = "15px";
+                loadMoreBtn.style.marginBottom = "20px";
+                loadMoreBtn.innerText = "Daha Fazla Göster ⬇️";
+                loadMoreBtn.onclick = () => {
+                    visibleCount += 50;
+                    renderBookList(true); // true = Sadece yeni 50'liği listenin sonuna ekle
+                };
+                container.appendChild(loadMoreBtn);
+            }
+        }
 
         window.toggleSort = () => { sortAsc = !sortAsc; document.getElementById('btn-sort').innerText = sortAsc ? "A-Z" : "Z-A"; applyFilters(); showToast(sortAsc ? "A'dan Z'ye ⬇️" : "Z'den A'ya ⬆️"); }
         window.goToAuthor = (name) => { const authorBooks = globalBooks.filter(b => b.author === name); openAuthorDetail(name, authorBooks); }
         
         function createBookCard(b) { 
-    const i = userInteractions[b.id] || {}; 
-    let statusColor = i.status === 'read' ? 'var(--success)' : null; 
-    
-    const div = document.createElement('div'); 
-    div.className = "book-item"; 
-    if(b.isMyPending) div.classList.add('just-added');
-    div.onclick = () => openBookModal(b); 
-    
-    // 1. SADELEŞTİRME: Uzun kütüphane yazısı yerine yuvarlak, şık ikonlar
-    let ownerBadge = "";
-    if (b.isMyPending) { 
-        ownerBadge = `<div class="owner-badge pending" style="padding: 4px; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 12px;">⏳</div>`; 
-    } else if (b.ownerType === 'library' || !b.ownerType) { 
-        ownerBadge = `<div class="owner-badge library" style="padding: 4px; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 14px;">🏛️</div>`; 
-    } else { 
-        ownerBadge = `<div class="owner-badge user">👤 ${b.addedByName || "Üye"}</div>`; 
-    }
+            const i = userInteractions[b.id] || {}; 
+            let statusColor = i.status === 'read' ? 'var(--success)' : null; 
+            
+            const div = document.createElement('div'); 
+            div.className = "book-item"; 
+            if(b.isMyPending) div.classList.add('just-added');
+            div.onclick = () => openBookModal(b); 
+            
+            let ownerBadge = "";
+            if (b.isMyPending) { 
+                ownerBadge = `<div class="owner-badge pending" style="padding: 4px; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 12px;">⏳</div>`; 
+            } else if (b.ownerType === 'library' || !b.ownerType) { 
+                ownerBadge = `<div class="owner-badge library" style="padding: 4px; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 14px;">🏛️</div>`; 
+            } else { 
+                ownerBadge = `<div class="owner-badge user">👤 ${b.addedByName || "Üye"}</div>`; 
+            }
 
-    // 2. SADELEŞTİRME: Rozeti kitabın yanından alıp üstüne ayrı bir satır olarak koyduk
-    let seriesBadge = "";
-    if (b.series && b.series !== 'none') {
-        const seriesData = SERIES_CONFIG.find(s => s.id === b.series);
-        if (seriesData) {
-            seriesBadge = `<div style="margin-bottom: 4px;"><span class="series-badge" style="background:${seriesData.bgColor}; color:${seriesData.textColor}; border:none; padding: 3px 6px;">${seriesData.label}</span></div>`;
+            let publisherBadge = "";
+            if (b.publisher && b.publisher !== 'none') {
+                publisherBadge = `<span class="publisher-badge">${b.publisher}</span>`;
+            }
+
+            let seriesBadge = "";
+            if (b.series && b.series !== 'none') {
+                const seriesData = dynamicSeries.find(s => s.id === b.series);
+                if (seriesData) {
+                    seriesBadge = `<span class="series-badge" style="background:${seriesData.bgColor}; color:${seriesData.textColor}; border:none;">${seriesData.name}</span>`;
+                }
+            }
+
+            let tagsHtml = (publisherBadge || seriesBadge) ? `<div style="margin-bottom: 4px; display:flex; flex-wrap:wrap; gap:5px;">${publisherBadge}${seriesBadge}</div>` : "";
+
+            // LAZY LOAD: img etiketine loading="lazy" eklendi.
+            let coverHtml = (b.cover && b.cover.length > 5) ? `<img src="${b.cover}" loading="lazy">` : `<div class="default-cover">📚</div>`; 
+            
+            div.innerHTML = `
+                ${ownerBadge}
+                <div class="book-icon-box">${coverHtml}</div>
+                <div class="book-details">
+                    ${tagsHtml}
+                    <div class="book-title">${b.title}</div>
+                    <div class="book-author">${b.author}</div>
+                </div>
+                ${statusColor ? `<div class="status-badge show" style="background:${statusColor}"></div>` : ''}
+            `; 
+            
+            return div; 
         }
-    }
 
-    let coverHtml = (b.cover && b.cover.length > 5) ? `<img src="${b.cover}">` : `<div class="default-cover">📚</div>`; 
-    
-    // Kitap adının yanındaki etiketi sildik, div hiyerarşisinde başlığın üstüne yerleştirdik.
-    div.innerHTML = `
-        ${ownerBadge}
-        <div class="book-icon-box">${coverHtml}</div>
-        <div class="book-details">
-            ${seriesBadge}
-            <div class="book-title" style="white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${b.title}</div>
-            <div class="book-author" style="margin-top: 2px;">${b.author}</div>
-        </div>
-        ${statusColor ? `<div class="status-badge show" style="background:${statusColor}"></div>` : ''}
-    `; 
-    
-    return div; 
-}
-
-        // YAZARLAR SAYFASI İŞLEMLERİ
         window.renderAuthors = () => {
             const q = document.getElementById('search-authors').value.toLowerCase();
             const grid = document.getElementById('authors-grid');
@@ -603,7 +869,7 @@
                 const div = document.createElement('div');
                 div.className = 'author-card';
                 div.onclick = () => window.openAuthorDetail(authorName, authors[authorName]); 
-                let imgContent = meta.img ? `<img src="${meta.img}">` : authorName.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+                let imgContent = meta.img ? `<img src="${meta.img}" loading="lazy">` : authorName.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
                 div.innerHTML = `<div class="author-img-box">${imgContent}</div><div style="font-weight:bold; font-size:14px; margin-bottom:5px; color:white;">${authorName}</div><div style="font-size:12px; color:var(--text-dim);">${count} Kitap</div>`;
                 grid.appendChild(div);
             });
@@ -662,58 +928,6 @@
             openAuthorDetail(currentAuthorName, authorBooks);
         }
 
-        async function fetchAuthorFromWiki(authorName) {
-             try {
-                let url = `https://tr.wikipedia.org/w/api.php?action=query&format=json&prop=extracts|pageimages&exintro&explaintext&pithumbsize=500&titles=${encodeURIComponent(authorName)}&origin=*`;
-                let res = await fetch(url);
-                let data = await res.json();
-                let pages = data.query.pages;
-                let pageId = Object.keys(pages)[0];
-                if(pageId === "-1") {
-                     url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts|pageimages&exintro&explaintext&pithumbsize=500&titles=${encodeURIComponent(authorName)}&origin=*`;
-                     res = await fetch(url);
-                     data = await res.json();
-                     pages = data.query.pages;
-                     pageId = Object.keys(pages)[0];
-                }
-                if(pageId === "-1") return null;
-                const page = pages[pageId];
-                return { bio: page.extract || "Biyografi bulunamadı.", img: page.thumbnail ? page.thumbnail.source : "" };
-             } catch (e) { return null; }
-        }
-
-        window.autoFixMissing = async () => {
-            if(!isAdmin) return;
-            showToast("Eksik taraması başladı...");
-            const missingBooks = globalBooks.filter(b => !b.cover || !b.desc || b.desc.length < 5);
-            for(const b of missingBooks){
-                const info = await fetchFromGoogle(`intitle:${b.title}+inauthor:${b.author}`);
-                if(info){
-                    const u={};
-                    if(!b.cover && info.imageLinks) u.cover = info.imageLinks.thumbnail.replace('http:','https:');
-                    if((!b.desc || b.desc.length<5) && info.description) u.desc = info.description;
-                    if(Object.keys(u).length > 0) await updateDoc(doc(db,"books",b.id),u);
-                }
-            }
-            const uniqueAuthors = [...new Set(globalBooks.map(b => b.author))];
-            let authorCount = 0;
-            for(const authorName of uniqueAuthors) {
-                const currentMeta = authorMeta[authorName];
-                const needsUpdate = !currentMeta || !currentMeta.img || currentMeta.img === "";
-                if(needsUpdate) {
-                    const wikiData = await fetchAuthorFromWiki(authorName);
-                    if(wikiData) {
-                        let newBio = wikiData.bio;
-                        if(currentMeta && currentMeta.bio && currentMeta.bio.length > 10) newBio = currentMeta.bio;
-                        await setDoc(doc(db, "authors", authorName), { name: authorName, img: wikiData.img, bio: newBio }, { merge: true });
-                        authorCount++;
-                    }
-                }
-            }
-            showToast(`Tarama Bitti: ${authorCount} yazar güncellendi.`);
-        }
-
-        // YÖNETİCİ & KULLANICI İŞLEMLERİ
         function listenToUsers() { 
             onSnapshot(collection(db, "users"), (snap) => { 
                 const list = document.getElementById('users-list'); 
@@ -751,7 +965,6 @@
             });
         }
 
-        // KULLANICI VERİLERİ (ETKİLEŞİM & YORUM)
         function listenToInteractions() { if(!currentUser)return; const q=query(collection(db,"interactions"),where("uid","==",currentUser.uid)); onSnapshot(q,(snap)=>{ userInteractions={}; snap.forEach(d=>userInteractions[d.data().bookId]=d.data()); applyFilters(); updateProfileStats(); }); }
         function listenToUserComments() { if(!currentUser) return; const q = query(collection(db, "comments"), where("uid", "==", currentUser.uid)); onSnapshot(q, (snap) => { myComments = []; snap.forEach(d => myComments.push({id: d.id, ...d.data()})); myComments.sort((a,b) => (b.date || 0) - (a.date || 0)); document.getElementById('stat-com').innerText = myComments.length; }); }
 
@@ -762,7 +975,6 @@
             if (type === 'comments') { if (myComments.length === 0) { list.innerHTML = "<div style='text-align:center;color:#666;padding:20px;'>Henüz yorum yapmadın.</div>"; return; } myComments.forEach(c => { const book = globalBooks.find(b => b.id === c.bookId); if(!book) return; const date = new Date(c.date).toLocaleDateString(); const div = document.createElement('div'); div.className = "my-comment-card"; div.onclick = () => openBookModal(book); const cover = (book.cover && book.cover.length > 5) ? `<img src="${book.cover}" class="my-comment-cover">` : `<div class="my-comment-cover" style="background:#333;display:flex;align-items:center;justify-content:center;">📚</div>`; div.innerHTML = `${cover}<div class="my-comment-info"><div class="my-comment-book">${book.title}</div><div class="my-comment-date">${date}</div><div class="my-comment-body">"${c.text}"</div></div>`; list.appendChild(div); }); return; } if (type === 'added') { const addedBooks = globalBooks.filter(b => b.addedBy === currentUser.uid); if (addedBooks.length === 0) { list.innerHTML = "<div style='text-align:center;color:#666;padding:20px;'>Henüz kitap eklemedin.</div>"; return; } addedBooks.forEach(b => list.appendChild(createBookCard(b))); return; } const ids = Object.keys(userInteractions).filter(id => { if(type==='read') return userInteractions[id].status==='read'; if(type==='want') return userInteractions[id].status==='want'; }); if(ids.length === 0) list.innerHTML = "<div style='text-align:center;color:#666;padding:20px;'>Liste boş.</div>"; ids.forEach(id => { const b = globalBooks.find(x => x.id === id); if(b) list.appendChild(createBookCard(b)); }); 
         }
 
-        // KİTAP ÖNERİ (Rastgele)
         window.recommendBook = () => { 
             const unread = globalBooks.filter(b => { 
                 const i = userInteractions[b.id]; 
@@ -793,7 +1005,6 @@
         window.acceptRecommendation = async () => { await setStatus('want'); closeRecommendation(); showToast("Harika seçim! Listene eklendi. 🚀"); }
         window.viewRecommendation = () => { closeRecommendation(); openBookModal(currentBook); }
 
-        // KİTAP DETAY MODALI
         function requireLogin() { if (!currentUser) { showToast("Bu işlem için giriş yapmalısın 🔒"); switchTab('profile'); return true; } return false; }
 
         window.openBookModal = async (book) => {
@@ -816,7 +1027,16 @@
                 if(isAdmin) claimButton = `<button onclick="claimBook()" class="btn-main" style="background:var(--library); color:black; margin-bottom:15px; font-weight:bold;">🏫 Kütüphane Envanterine Al</button>`;
             } else { ownerInfo = `<div style="background:var(--library); color:black; padding:8px; border-radius:6px; font-weight:bold; font-size:12px; display:inline-block; margin-bottom:10px;">🏫 Fiziksel Kütüphane Envanteri</div>`; }
             let coverDisplay = book.cover ? `<img src="${book.cover}" style="width:120px; height:180px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5); margin-bottom:15px;">` : `<div style="width:120px; height:180px; border-radius:12px; background:#333; display:flex; align-items:center; justify-content:center; font-size:50px; margin:0 auto 15px;">📚</div>`;
-            document.getElementById('modal-view-mode').innerHTML = `${coverDisplay}<br>${ownerInfo}${claimButton}<h2 style="font-size:20px; margin-bottom:5px;">${book.title} ${isPending ? '<span style="color:orange;font-size:12px;">(Onay Bekliyor)</span>' : ''}</h2><span onclick="goToAuthor('${book.author}')" style="color:var(--accent); font-size:15px; cursor:pointer; text-decoration:underline;">${book.author}</span><div class="minimal-stat-bar"><span>✅ <strong>${r}</strong> Okudu</span><span>🔖 <strong>${w}</strong> Listede</span><span>★ <strong>${avgRating}</strong> (${ratingsCount})</span></div><div class="star-rating-minimal">${[1,2,3,4,5].map(n=>`<span class="star ${(i.rating||0)>=n?'filled':''}" onclick="setRating(${n})">★</span>`).join('')}</div><div class="compact-actions"><button class="btn-compact ${i.status==='read'?'active-read':''}" id="btn-modal-read" onclick="setStatus('read')">✅ Okudum</button><button class="btn-compact ${i.status==='want'?'active-want':''}" id="btn-modal-want" onclick="setStatus('want')">🔖 Listem</button></div><div style="text-align:left; background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-top:10px;"><h4 style="margin:0 0 5px 0; color:#999; font-size:13px;">Özet</h4><p style="color:#ddd; font-size:13px; line-height:1.5;">${book.desc||"Özet yok."}</p></div><div style="margin-top:20px; text-align:left;"><h4 style="margin-bottom:10px; font-size:14px;">Yorumlar <span id="comment-count-badge" style="font-size:12px; color:#888;">(0)</span></h4><div id="comments-list">Yükleniyor...</div><div style="display:flex; gap:10px; margin-top:10px;"><input type="text" id="comment-input" class="input-std" placeholder="Yorum..." style="margin:0; height:40px;"><button onclick="sendComment()" class="btn-main" style="margin:0; width:auto; height:40px;">Gönder</button></div></div>`;
+            
+            let isbnInfo = book.isbn ? `<div style="font-size:11px; color:#666; font-family:monospace; margin-bottom:5px;">ISBN: ${book.isbn}</div>` : "";
+            let publisherInfo = (book.publisher && book.publisher !== 'none') ? `<div style="color:var(--accent); font-size:12px; font-weight:bold; margin-bottom:5px;">🏢 ${book.publisher}</div>` : "";
+            let seriesInfo = "";
+            if(book.series && book.series !== 'none') {
+                const sData = dynamicSeries.find(s => s.id === book.series);
+                if(sData) seriesInfo = `<div style="margin-bottom:5px;"><span class="series-badge" style="background:${sData.bgColor}; color:${sData.textColor}; border:none;">📚 ${sData.name}</span></div>`;
+            }
+
+            document.getElementById('modal-view-mode').innerHTML = `${coverDisplay}<br>${isbnInfo}${ownerInfo}${claimButton}${publisherInfo}${seriesInfo}<h2 style="font-size:20px; margin-bottom:5px; margin-top:5px;">${book.title} ${isPending ? '<span style="color:orange;font-size:12px;">(Onay Bekliyor)</span>' : ''}</h2><span onclick="goToAuthor('${book.author}')" style="color:var(--text-dim); font-size:15px; cursor:pointer; text-decoration:underline;">${book.author}</span><div class="minimal-stat-bar" style="margin-top:15px;"><span>✅ <strong>${r}</strong> Okudu</span><span>🔖 <strong>${w}</strong> Listede</span><span>★ <strong>${avgRating}</strong> (${ratingsCount})</span></div><div class="star-rating-minimal">${[1,2,3,4,5].map(n=>`<span class="star ${(i.rating||0)>=n?'filled':''}" onclick="setRating(${n})">★</span>`).join('')}</div><div class="compact-actions"><button class="btn-compact ${i.status==='read'?'active-read':''}" id="btn-modal-read" onclick="setStatus('read')">✅ Okudum</button><button class="btn-compact ${i.status==='want'?'active-want':''}" id="btn-modal-want" onclick="setStatus('want')">🔖 Listem</button></div><div style="text-align:left; background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-top:10px;"><h4 style="margin:0 0 5px 0; color:#999; font-size:13px;">Özet</h4><p style="color:#ddd; font-size:13px; line-height:1.5;">${book.desc||"Özet yok."}</p></div><div style="margin-top:20px; text-align:left;"><h4 style="margin-bottom:10px; font-size:14px;">Yorumlar <span id="comment-count-badge" style="font-size:12px; color:#888;">(0)</span></h4><div id="comments-list">Yükleniyor...</div><div style="display:flex; gap:10px; margin-top:10px;"><input type="text" id="comment-input" class="input-std" placeholder="Yorum..." style="margin:0; height:40px;"><button onclick="sendComment()" class="btn-main" style="margin:0; width:auto; height:40px;">Gönder</button></div></div>`;
             document.getElementById('full-modal').style.display = 'block'; loadComments(book.id);
         }
 
@@ -841,15 +1061,20 @@
         window.deleteComment = async (id) => { if(confirm("Yorumu silmek istiyor musunuz?")) { await deleteDoc(doc(db, "comments", id)); showToast("Yorum silindi"); } }
         window.sendComment=async()=>{ if(requireLogin()) return; const t=document.getElementById('comment-input').value;if(!t)return;await addDoc(collection(db,"comments"),{bookId:currentBook.id,text:t,userName:currentUser.displayName||"Okur",uid:currentUser.uid,date:Date.now()});document.getElementById('comment-input').value=""; }
 
-        // KİTAP EKLEME VE DÜZENLEME (MÜKERRER & SERİ)
         window.findDuplicates = () => {
             if(!isAdmin) return;
             const seen = {};
             const duplicates = [];
             globalBooks.forEach(b => {
-                const cleanKey = b.title.toLowerCase().trim() + "|" + b.author.toLowerCase().trim();
+                let cleanKey = "";
+                if(b.isbn && b.isbn.trim() !== "") {
+                    cleanKey = b.isbn.trim();
+                } else {
+                    cleanKey = b.title.toLowerCase().trim() + "|" + b.author.toLowerCase().trim();
+                }
+                
                 if(seen[cleanKey]) {
-                    if(!duplicates.includes(b.title)) duplicates.push(b.title);
+                    if(!duplicates.includes(b.title)) duplicates.push(b.title + (b.isbn ? ` (ISBN: ${b.isbn})` : ''));
                 } else {
                     seen[cleanKey] = true;
                 }
@@ -859,12 +1084,23 @@
             else { showToast("Sistem temiz, mükerrer kitap yok! ✨"); }
         }
 
+        function matchPublisher(pubString) {
+            if(!pubString) return "none";
+            const target = pubString.toLowerCase();
+            for(const p of dynamicPublishers) {
+                if(target.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(target)) {
+                    return p.name;
+                }
+            }
+            return "none";
+        }
+
         function autoDetectSeries(title, publisher) {
             const t = title.toLowerCase();
             const p = publisher ? publisher.toLowerCase() : "";
-            for (const series of SERIES_CONFIG) {
-                if (series.id === 'none' || !series.keyword) continue;
-                if (t.includes(series.keyword) || p.includes(series.keyword)) {
+            for (const series of dynamicSeries) {
+                const kw = series.name.toLowerCase();
+                if (t.includes(kw) || p.includes(kw)) {
                     return series.id;
                 }
             }
@@ -874,11 +1110,12 @@
         async function fetchFromGoogle(q) { try{const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);const d=await r.json();return (d.items&&d.items.length>0)?d.items[0].volumeInfo:null;}catch(e){return null;} }
         
         window.fetchByISBN=async()=>{
-            const i=document.getElementById('isbn-input').value;if(!i)return showToast("ISBN girin");showToast("Aranıyor...");
+            const i=document.getElementById('add-isbn').value;if(!i)return showToast("ISBN girin");showToast("Aranıyor...");
             const info=await fetchFromGoogle(`isbn:${i}`);
             if(info){
                 document.getElementById('add-title').value=info.title;
                 document.getElementById('add-author').value=info.authors?info.authors[0]:'';
+                document.getElementById('add-publisher').value = matchPublisher(info.publisher);
                 document.getElementById('add-desc').value=info.description||'';
                 if(info.imageLinks)document.getElementById('add-cover').value=info.imageLinks.thumbnail.replace('http:','https:');
                 document.getElementById('add-series').value = autoDetectSeries(info.title, info.publisher);
@@ -890,8 +1127,10 @@
         
         window.adminAddBook=async()=>{ 
             if(!currentUser) { showToast("Giriş yapmalısın!"); switchTab('profile'); return; } 
+            const i=document.getElementById('add-isbn').value;
             const t=document.getElementById('add-title').value; 
             const a=document.getElementById('add-author').value; 
+            const p=document.getElementById('add-publisher').value; 
             let c=document.getElementById('add-cover').value; 
             const d=document.getElementById('add-desc').value; 
             const s=document.getElementById('add-series').value;
@@ -903,12 +1142,14 @@
             const ownerType = isAdmin ? 'library' : 'user'; 
             
             await addDoc(collection(db,"books"),{ 
-                title:t, author:a, cover:c, desc:d, series:s, status:status, ownerType: ownerType, 
+                isbn:i, title:t, author:a, publisher:p, cover:c, desc:d, series:s, status:status, ownerType: ownerType, 
                 addedBy:currentUser.uid, addedByName: currentUser.displayName || "Üye" 
             }); 
             
             if(isAdmin) showToast("Yayınlandı (Kütüphane Envanteri) ✅"); else showToast("Onaya Gönderildi (Üye Kitabı) ⏳"); 
-            document.getElementById('add-title').value="";document.getElementById('add-author').value="";document.getElementById('add-cover').value="";document.getElementById('add-desc').value=""; 
+            document.getElementById('add-isbn').value="";document.getElementById('add-title').value="";document.getElementById('add-author').value="";
+            document.getElementById('add-publisher').value="none";document.getElementById('add-cover').value="";
+            document.getElementById('add-desc').value=""; 
         }
         
         window.adminDeleteBook=async()=>{if(confirm("Silmek istiyor musun?")){await deleteDoc(doc(db,"books",currentBook.id));closeFullModal();showToast("Silindi");}}
@@ -928,8 +1169,10 @@
                 edit.classList.remove('hidden'); 
                 document.getElementById('btn-edit-mode').innerText="İptal"; 
                 
+                document.getElementById('edit-isbn').value = currentBook.isbn || ""; 
                 document.getElementById('edit-title').value = currentBook.title; 
                 document.getElementById('edit-author').value = currentBook.author; 
+                document.getElementById('edit-publisher').value = currentBook.publisher || "none"; 
                 document.getElementById('edit-cover').value = currentBook.cover||""; 
                 document.getElementById('edit-desc').value = currentBook.desc||""; 
                 document.getElementById('edit-series').value = currentBook.series||"none";
@@ -943,8 +1186,10 @@
         window.saveEditedBook = async () => { 
             if(!isAdmin)return; 
             const d={
+                isbn:document.getElementById('edit-isbn').value,
                 title:document.getElementById('edit-title').value, 
                 author:document.getElementById('edit-author').value, 
+                publisher:document.getElementById('edit-publisher').value, 
                 cover:document.getElementById('edit-cover').value, 
                 desc:document.getElementById('edit-desc').value,
                 series:document.getElementById('edit-series').value
@@ -956,7 +1201,16 @@
         
         window.approveBook = async () => { 
             if(!isAdmin) return; 
-            const d={ title:document.getElementById('edit-title').value, author:document.getElementById('edit-author').value, cover:document.getElementById('edit-cover').value, desc:document.getElementById('edit-desc').value, series:document.getElementById('edit-series').value, status: 'active' }; 
+            const d={ 
+                isbn:document.getElementById('edit-isbn').value,
+                title:document.getElementById('edit-title').value, 
+                author:document.getElementById('edit-author').value, 
+                publisher:document.getElementById('edit-publisher').value, 
+                cover:document.getElementById('edit-cover').value, 
+                desc:document.getElementById('edit-desc').value, 
+                series:document.getElementById('edit-series').value, 
+                status: 'active' 
+            }; 
             await updateDoc(doc(db,"books",currentBook.id), d); 
             showToast("Kitap Yayınlandı! 🎉"); 
             closeFullModal(); 
@@ -964,8 +1218,6 @@
 
         window.toggleUserRole = async (uid, currentRole) => { if(!isAdmin) return; const newRole = currentRole === 'admin' ? 'user' : 'admin'; if(confirm(`Yetkiyi değiştirmek istiyor musun?`)) await updateDoc(doc(db, "users", uid), { role: newRole }); }
         window.deleteUser = async (uid) => { if(!isAdmin) return; if(confirm("Kullanıcıyı silmek istediğine emin misin?")) await deleteDoc(doc(db, "users", uid)); }
-        
-        window.viewMessages = async () => { if(!isAdmin) return; document.getElementById('modal-view-mode').classList.remove('hidden'); document.getElementById('modal-edit-mode').classList.add('hidden'); document.getElementById('full-modal').style.display = 'block'; document.getElementById('modal-title').innerText = "Gelen Mesajlar"; const listDiv = document.getElementById('modal-view-mode'); listDiv.innerHTML = "Yükleniyor..."; const q = query(collection(db, "messages"), orderBy("date", "desc")); const snap = await getDocs(q); if(snap.empty) { listDiv.innerHTML = "Mesaj yok."; return; } let html = ""; snap.forEach(d => { const m = d.data(); const date = new Date(m.date).toLocaleDateString(); html += `<div class="msg-item"><div class="msg-header"><span>${m.email}</span><span>${date}</span></div><div>${m.text}</div></div>`; }); listDiv.innerHTML = html; }
         
         window.switchTab=(t)=>{ 
             if(t==='users' && !isAdmin) return showToast("Bu alan sadece yöneticilere özeldir.");
@@ -991,18 +1243,30 @@
 
         function updateProfileStats() { const validIds = globalBooks.map(b => b.id); const v = Object.values(userInteractions).filter(i => validIds.includes(i.bookId)); document.getElementById('stat-read').innerText = v.filter(i=>i.status==='read').length; document.getElementById('stat-want').innerText = v.filter(i=>i.status==='want').length; if(currentUser) { const addedCount = globalBooks.filter(b => b.addedBy === currentUser.uid).length; document.getElementById('stat-added').innerText = addedCount; } else { document.getElementById('stat-added').innerText = 0; } }
         
-        // EXCEL VE YEDEKLEME
         window.exportExcel = () => {
             if (globalBooks.length === 0) return showToast("Dışa aktarılacak kitap yok.");
-            const data = globalBooks.map(b => ({
-                "Kitap Adı": b.title,
-                "Yazar": b.author,
-                "Seri": b.series || "none",
-                "Kapak Linki": b.cover || "",
-                "Özet": b.desc || "",
-                "Durum": b.status || "active",
-                "Ekleyen": b.addedByName || "Sistem"
-            }));
+            
+            const data = globalBooks.map(b => {
+                let seriAdi = "none";
+                if(b.series && b.series !== 'none') {
+                    const sData = dynamicSeries.find(s => s.id === b.series);
+                    if(sData) seriAdi = sData.name;
+                }
+
+                return {
+                    "ISBN": b.isbn || "",
+                    "Kitap Adı": b.title || "",
+                    "Yazar": b.author || "",
+                    "Yayınevi": b.publisher && b.publisher !== 'none' ? b.publisher : "",
+                    "Seri": seriAdi !== 'none' ? seriAdi : "",
+                    "Kapak Linki": b.cover || "",
+                    "Özet": b.desc || "",
+                    "Durum": b.status || "active",
+                    "Ekleyen": b.addedByName || "Sistem",
+                    "Ekleyen_UID": b.addedBy || ""
+                };
+            });
+            
             const worksheet = XLSX.utils.json_to_sheet(data);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Kitaplar");
@@ -1023,21 +1287,59 @@
                     const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
                     if (confirm(`${jsonData.length} adet kitap içe aktarılacak. Onaylıyor musunuz?`)) {
-                        showToast("Yükleme başladı...");
+                        showToast("Yükleme başladı... Lütfen bekleyin.");
+                        
                         for (const item of jsonData) {
+                            
+                            // 1. Yayınevi
+                            let pubName = item["Yayınevi"] || item.publisher || "";
+                            pubName = pubName.trim();
+                            if (pubName !== "") {
+                                if (!dynamicPublishers.find(p => p.name.toLowerCase() === pubName.toLowerCase())) {
+                                    await addDoc(collection(db, "publishers"), { name: pubName });
+                                    dynamicPublishers.push({ id: "temp", name: pubName });
+                                }
+                            } else {
+                                pubName = "none";
+                            }
+
+                            // 2. Seri
+                            let seriesName = item["Seri"] || item.series || "";
+                            seriesName = seriesName.trim();
+                            let seriesId = "none";
+                            
+                            if (seriesName !== "") {
+                                let existingSeries = dynamicSeries.find(s => s.name.toLowerCase() === seriesName.toLowerCase());
+                                if (!existingSeries) {
+                                    const docRef = await addDoc(collection(db, "series"), { name: seriesName, bgColor: "#5e5ce6", textColor: "#ffffff" });
+                                    seriesId = docRef.id;
+                                    dynamicSeries.push({ id: seriesId, name: seriesName, bgColor: "#5e5ce6", textColor: "#ffffff" });
+                                } else {
+                                    seriesId = existingSeries.id; 
+                                }
+                            }
+
+                            // 3. Kitabı Kaydet (Ekleyen ID ve Durum ile birlikte)
+                            const statusVal = item["Durum"] || item.status || 'active';
+                            const addedByNameVal = item["Ekleyen"] || item.addedByName || ((currentUser.displayName || "Yönetici") + " (Excel)");
+                            const addedByUIDVal = item["Ekleyen_UID"] || item.addedBy || currentUser.uid;
+
                             await addDoc(collection(db, "books"), {
-                                title: item["Kitap Adı"] || item.title,
-                                author: item["Yazar"] || item.author,
+                                isbn: String(item["ISBN"] || item.isbn || ""),
+                                title: item["Kitap Adı"] || item.title || "İsimsiz",
+                                author: item["Yazar"] || item.author || "Bilinmiyor",
+                                publisher: pubName,
                                 cover: item["Kapak Linki"] || item.cover || "",
                                 desc: item["Özet"] || item.desc || "",
-                                series: item["Seri"] || "none",
-                                status: 'active',
+                                series: seriesId,
+                                status: statusVal,
                                 ownerType: 'library',
-                                addedBy: currentUser.uid,
-                                addedByName: (currentUser.displayName || "Yönetici") + " (Toplu Yükleme)"
+                                addedBy: addedByUIDVal,
+                                addedByName: addedByNameVal
                             });
                         }
                         showToast("Tüm kitaplar başarıyla eklendi! 🎉");
+                        document.getElementById('file-import').value = "";
                     }
                 } catch (err) {
                     console.error(err);
